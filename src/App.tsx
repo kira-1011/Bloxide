@@ -1,0 +1,3 @@
+export default function App() {
+  return <div className="flex h-full flex-col" />;
+}

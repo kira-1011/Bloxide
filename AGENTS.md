@@ -21,7 +21,7 @@ These are product decisions, not preferences. Do not relax them.
    connection, or sets one value per utterance. It never plans ahead, never
    suggests the next block, and never silently fixes a bug.
 2. **Never use `dangerous: true` on a Voxide action.** It pauses and requires a
-   *click* to confirm. Our users may not be able to click. Confirm by voice
+   _click_ to confirm. Our users may not be able to click. Confirm by voice
    instead.
 3. **No mouse-only paths.** If an action can only be done by clicking, it is a
    bug. Keyboard and pointer input stay available, but voice must reach
@@ -34,6 +34,7 @@ These are product decisions, not preferences. Do not relax them.
 ## Stack
 
 - pnpm, Vite, React 18+, TypeScript
+- oxlint + oxfmt (Oxc) for linting and formatting
 - Tailwind CSS (`@tailwindcss/vite`)
 - `blockly` (core, direct)
 - `@voxide/react` (voice)
@@ -96,6 +97,11 @@ Every action produces three things at once:
 ## Conventions
 
 - TypeScript strict. No `any`.
+- Lint with **oxlint**, format with **oxfmt** (both from https://oxc.rs). Not
+  ESLint, not Prettier — do not install either. Entry points: `pnpm lint`,
+  `pnpm lint:fix`, `pnpm fmt`, `pnpm fmt:check`. Config lives in
+  `.oxlintrc.json` and `.oxfmtrc.json`; oxfmt is Prettier-compatible and needs
+  no options.
 - Voice capabilities live in `src/voice/`, block definitions in `src/blocks/`,
   locales in `src/locales/`.
 - Small commits, conventional prefixes (`feat:`, `fix:`, `docs:`).
@@ -158,6 +164,11 @@ Now maintained by the Raspberry Pi Foundation, supported by Google.
 - TypeScript — https://www.typescriptlang.org/docs/
 - Tailwind CSS — https://tailwindcss.com/docs
 - Tailwind + Vite setup — https://tailwindcss.com/docs/installation/using-vite
+- Oxc (oxlint, oxfmt) — https://oxc.rs
+- oxlint — https://oxc.rs/docs/guide/usage/linter.html
+- oxlint config reference —
+  https://oxc.rs/docs/guide/usage/linter/config-file-reference.html
+- oxfmt — https://oxc.rs/docs/guide/usage/formatter.html
 
 ### Research
 
