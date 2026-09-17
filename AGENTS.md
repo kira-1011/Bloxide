@@ -175,4 +175,5 @@ Now maintained by the Raspberry Pi Foundation, supported by Google.
 - Anchor paper (Goller, Fraser & Graßl, ITiCSE 2026) — https://arxiv.org/abs/2603.28246
 - Accessibility barriers literature review (2026) — https://link.springer.com/article/10.1007/s10209-026-01351-6
 - ScholarXIV developer docs — https://scholarxiv.com/developers/docs
-- Ideation trail (ScholarXIV collection) — TODO: paste collection link
+- Ideation trail (ScholarXIV collection) —
+  https://www.scholarxiv.com/collections/share/20668bcf184466af0c88a55fc256ad93635c32032365a97cc437a9344c0534e7
