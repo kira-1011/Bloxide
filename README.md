@@ -92,18 +92,14 @@ pnpm fmt        # oxfmt
 pnpm fmt:check  # oxfmt --check
 ```
 
-`dev` and `build` first copy Blockly's sprites and sounds into
-`public/blockly-media`, which is generated and not committed.
-
 CI runs lint, format check, typecheck and build on every push and pull request.
 
 ## Layout
 
 ```
 src/
-  blocks/       block definitions and the toolbox
-  components/   React components, including the workspace mount
-  hooks/        useBlocklyWorkspace and friends
+  blockly/      the block editor: workspace hook, toolbox, options, locale
+  blocks/       our own block definitions
   voice/        Voxide capabilities and handlers
   locales/      en, am, om
 ```

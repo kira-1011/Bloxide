@@ -93,10 +93,62 @@ Every action produces three things at once:
   `pnpm lint:fix`, `pnpm fmt`, `pnpm fmt:check`. Config lives in
   `.oxlintrc.json` and `.oxfmtrc.json`; oxfmt is Prettier-compatible and needs
   no options.
-- Voice capabilities live in `src/voice/`, block definitions in `src/blocks/`,
-  locales in `src/locales/`.
-- Small commits, conventional prefixes (`feat:`, `fix:`, `docs:`).
+- **Always import through the `@` alias. Never `./` or `../`.** `@` maps to
+  `src/` in both `vite.config.ts` and `tsconfig.json`, so `@/blockly/locale`
+  reads the same from anywhere and survives a file move. A relative import in
+  `src/` is a bug.
+- No barrel files. Import the module you mean — a barrel drags unrelated code
+  into the bundle and hides what a file actually depends on.
+- The Blockly editor integration lives in `src/blockly/`, voice capabilities in
+  `src/voice/`, our own block definitions in `src/blocks/`, locales in
+  `src/locales/`.
+- Small commits, conventional prefixes (`feat:`, `fix:`, `docs:`, `refactor:`,
+  `chore:`, `test:`, `perf:`, `build:`, `ci:`).
 - Never rewrite git history. No force-push, no squashing the initial commits.
+  Amending a commit that has not been pushed is fine.
+- Never credit an AI agent as commit author or co-author, and no generated-by
+  footers in commits or PR bodies.
+
+## Branches
+
+Conventional branch names, `<type>/<short-kebab-summary>`, the type matching
+the commit prefix the work will carry:
+
+```
+feat/voice-add-block      fix/flyout-scroll-on-touch
+refactor/blockly-module   chore/bump-blockly
+docs/readme-setup         test/capability-handlers
+```
+
+Keep the summary two to four words. Branch from `main`, never from another
+feature branch. One concern per branch — if the name needs an "and", it is two
+branches.
+
+## Pull requests
+
+- Title is the branch's conventional prefix plus what changed, in the
+  imperative: `refactor: group the Blockly editor into one module`. No trailing
+  full stop, no ticket noise.
+- Body: what changed and **why**, then how it was verified. A few lines beats a
+  wall of bullets. Call out anything a reviewer would otherwise have to
+  discover — a moved file, a dropped dependency, a behaviour change.
+- Keep it reviewable. A PR that mixes a refactor with a feature should have
+  been two branches.
+
+## Worktrees
+
+Two feature branches at once means two worktrees, not `git stash`. Blockly's
+dev server and `node_modules` are per-directory, so switching branches in one
+checkout re-optimises dependencies every time.
+
+```bash
+git worktree add ../bloxide-voice -b feat/voice-add-block
+cd ../bloxide-voice && pnpm install
+```
+
+`pnpm install` per worktree — `node_modules` is not shared. When the branch
+merges, `git worktree remove ../bloxide-voice`. `git worktree list` shows what
+is live; a branch can only be checked out in one worktree at a time.
 
 ## Out of scope
 
@@ -114,6 +166,7 @@ moved to the Raspberry Pi Foundation and Voxide is new, so both are likely
 newer than any model's knowledge.
 
 ### Voxide
+
 - https://voxide.app/llms.txt
 
 ### Blockly
