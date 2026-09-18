@@ -104,19 +104,6 @@ src/
   locales/      en, am, om
 ```
 
-## Rules we are holding to
-
-These are in [AGENTS.md](AGENTS.md) in more detail, but the short version:
-
-1. One operation per sentence. The child builds the program, not the agent.
-2. Nothing requires a click. If an action is mouse only, it is a bug. That
-   includes confirmation prompts — a dialog you have to click to dismiss is
-   useless to someone who cannot click, so confirmation happens by voice.
-3. Around fifteen blocks. A small set that works beats a large set that mostly
-   works.
-4. Every label and spoken line comes from a locale file. English, Amharic and
-   Afaan Oromo from the start, not retrofitted later.
-
 ## Scope
 
 Bloxide is aimed at children with motor impairment and clear speech.
