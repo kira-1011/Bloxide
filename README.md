@@ -56,6 +56,7 @@ Bloxide blocks and the whole voice layer are still to come.
 - [Blockly](https://docs.blockly.com) for the block editor
 - [Voxide](https://voxide.app/docs) for voice
 - [oxlint and oxfmt](https://oxc.rs) for linting and formatting
+- [Vitest](https://vitest.dev) and Testing Library for tests
 
 ## Running it locally
 
@@ -90,9 +91,13 @@ pnpm lint       # oxlint
 pnpm lint:fix   # oxlint --fix
 pnpm fmt        # oxfmt
 pnpm fmt:check  # oxfmt --check
+pnpm test       # vitest run
+pnpm test:watch # vitest, interactive
+pnpm test:coverage
 ```
 
-CI runs lint, format check, typecheck and build on every push and pull request.
+CI runs lint, format check, typecheck, build and the test suite on every push
+and pull request.
 
 ## Layout
 
