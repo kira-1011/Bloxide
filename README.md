@@ -46,8 +46,8 @@ game" it will not build one, because the point is that the child is the author.
 
 ## Status
 
-Early. Project scaffold only — the block editor and the voice layer are both
-still to be built.
+Early. A drag and drop Blockly workspace is up with a starter toolbox; the
+Bloxide blocks and the whole voice layer are still to come.
 
 ## Stack
 
@@ -98,8 +98,8 @@ CI runs lint, format check, typecheck and build on every push and pull request.
 
 ```
 src/
-  blocks/       block definitions and the toolbox
-  components/   the Blockly workspace mount
+  blockly/      the block editor: workspace hook, toolbox, options, locale
+  blocks/       our own block definitions
   voice/        Voxide capabilities and handlers
   locales/      en, am, om
 ```
