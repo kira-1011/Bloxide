@@ -109,6 +109,36 @@ Every action produces three things at once:
 - Never credit an AI agent as commit author or co-author, and no generated-by
   footers in commits or PR bodies.
 
+## Skills
+
+Two installed skills carry rules this project follows. Load the relevant one
+before writing code in its area, not after.
+
+- **`vercel-react-best-practices`** — before writing or changing any React
+  code: components, hooks, data fetching, bundle boundaries. It is the
+  authority for this codebase on lazy loading, effect dependencies, what
+  belongs in a ref versus state, and re-render cost. The rules that keep coming
+  up here: `advanced-use-latest` (`useEffectEvent`, so a caller's callback
+  identity never re-runs an effect), `bundle-dynamic-imports` (Blockly is
+  ~900 kB and loads as its own chunk), `advanced-init-once`, and
+  `rendering-hoist-jsx`.
+- **`improve-codebase-architecture`** — before any refactor, and whenever a
+  module starts feeling shallow. Use its vocabulary exactly — module,
+  interface, depth, seam, adapter, leverage, locality — and apply the deletion
+  test: would removing this concentrate complexity, or just move it? "Just
+  moves it" means delete. It found the barrel and the editor spread across
+  three directories.
+
+Install both globally:
+
+```bash
+npx skills add vercel-labs/agent-skills@vercel-react-best-practices -g -y
+npx skills add mattpocock/skills@improve-codebase-architecture -g -y
+```
+
+Prefer them over improvising a style: a rule from a skill beats a preference
+argued in review.
+
 ## Branches
 
 Conventional branch names, `<type>/<short-kebab-summary>`, the type matching
