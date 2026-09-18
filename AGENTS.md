@@ -287,14 +287,21 @@ branch out elsewhere:
 ```bash
 cd /path/to/main/checkout
 git worktree remove ../bloxide-voice
+rm -rf ../bloxide-voice              # remove leaves node_modules behind
+git branch -d feat/voice-add-block   # local branch
 git push origin --delete feat/voice-add-block
 git pull
 ```
 
-`git worktree list` should show only the main checkout once the work has
-landed. If a worktree directory was deleted by hand, `git worktree prune` clears
-the leftover bookkeeping. A branch can only be checked out in one worktree at a
-time.
+All five steps matter. `git worktree remove` deletes the tracked files and the
+bookkeeping, but leaves any ignored ones — so the directory survives as a husk
+of `node_modules`. It does not touch the local branch either, which otherwise
+sits in `git branch` long after it merged.
+
+Afterwards `git worktree list` should show only the main checkout, and `git
+branch` only `main`. If a worktree directory was deleted by hand first, `git
+worktree prune` clears the leftover bookkeeping. A branch can only be checked
+out in one worktree at a time.
 
 One gotcha: `gh pr merge` run from inside a worktree fails its local step with
 `fatal: 'main' is already used by worktree at ...`. The merge on GitHub still
