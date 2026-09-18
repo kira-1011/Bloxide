@@ -12,3 +12,5 @@ dist-ssr
 .idea
 
 *.tsbuildinfo
+
+.playwright-mcp

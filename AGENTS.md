@@ -64,15 +64,6 @@ Blocks are not React components.
   with `isWakeWordSupported()` before showing any listening affordance.
 - Chrome and Edge only for wake word. Degrade to click-to-talk elsewhere.
 
-## Capability surface
-
-Primitives only:
-
-`addBlock` · `attachBlock` · `setParam` · `deleteBlock` · `undo` ·
-`runProgram` · `stopProgram` · `readProgram` · `selectSprite` · `navigate`
-
-Keep this list near 15. Adding capabilities is usually the wrong fix.
-
 ## Block reference
 
 The child cannot point, so they need a way to say "that block". Three layers,
@@ -123,20 +114,7 @@ moved to the Raspberry Pi Foundation and Voxide is new, so both are likely
 newer than any model's knowledge.
 
 ### Voxide
-
-- Introduction — https://voxide.app/docs
-- Quick start — https://voxide.app/docs/quickstart
-- Actions (capabilities) — https://voxide.app/docs/actions
-- State awareness — https://voxide.app/docs/state
-- Voice activation / wake word — https://voxide.app/docs/voice-activation
-- Keyboard shortcut — https://voxide.app/docs/hotkey
-- Human handoff — https://voxide.app/docs/handoff
-- The orb (visualizer) — https://voxide.app/docs/visualizer
-- Non-React stacks — https://voxide.app/docs/frameworks
-- Security & CORS (domain whitelist) — https://voxide.app/docs/security
-- Privacy & redaction — https://voxide.app/docs/privacy
-- AI-assisted setup — https://voxide.app/docs/ai-setup
-- npm — https://www.npmjs.com/package/@voxide/react
+- https://voxide.app/llms.txt
 
 ### Blockly
 
@@ -154,7 +132,6 @@ Now maintained by the Raspberry Pi Foundation, supported by Google.
 - Accessibility — https://blockly.com/accessibility
 - Accessibility projects — https://blockly.com/accessibility-projects
 - Repo — https://github.com/RaspberryPiFoundation/blockly
-- Forum — https://groups.google.com/g/blockly
 
 ### Stack
 

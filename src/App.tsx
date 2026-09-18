@@ -1,3 +1,9 @@
+import { BlocklyWorkspace } from "./components/BlocklyWorkspace";
+
 export default function App() {
-  return <div className="flex h-full flex-col" />;
+  return (
+    <main className="h-full w-full">
+      <BlocklyWorkspace />
+    </main>
+  );
 }

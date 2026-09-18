@@ -1,4 +1,8 @@
-/** Blockly.inject() mount point. Workspace lives in a ref, never in state. */
+import { WORKSPACE_OPTIONS } from "../blocks";
+import { useBlocklyWorkspace } from "../hooks/useBlocklyWorkspace";
+
 export function BlocklyWorkspace() {
-  return null;
+  const { containerRef } = useBlocklyWorkspace({ options: WORKSPACE_OPTIONS });
+
+  return <div ref={containerRef} className="h-full w-full" />;
 }

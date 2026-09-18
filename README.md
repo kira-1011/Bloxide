@@ -46,8 +46,8 @@ game" it will not build one, because the point is that the child is the author.
 
 ## Status
 
-Early. Project scaffold only — the block editor and the voice layer are both
-still to be built.
+Early. A drag and drop Blockly workspace is up with a starter toolbox; the
+Bloxide blocks and the whole voice layer are still to come.
 
 ## Stack
 
@@ -92,6 +92,9 @@ pnpm fmt        # oxfmt
 pnpm fmt:check  # oxfmt --check
 ```
 
+`dev` and `build` first copy Blockly's sprites and sounds into
+`public/blockly-media`, which is generated and not committed.
+
 CI runs lint, format check, typecheck and build on every push and pull request.
 
 ## Layout
@@ -99,7 +102,8 @@ CI runs lint, format check, typecheck and build on every push and pull request.
 ```
 src/
   blocks/       block definitions and the toolbox
-  components/   the Blockly workspace mount
+  components/   React components, including the workspace mount
+  hooks/        useBlocklyWorkspace and friends
   voice/        Voxide capabilities and handlers
   locales/      en, am, om
 ```

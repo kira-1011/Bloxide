@@ -1,2 +1,2 @@
-/** The ~15 block types Bloxide ships. */
-export const BLOCK_TYPES: readonly string[] = [];
+export { WORKSPACE_OPTIONS } from "./options";
+export { TOOLBOX } from "./toolbox";
