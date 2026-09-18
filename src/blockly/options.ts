@@ -1,5 +1,5 @@
 import type * as Blockly from "blockly/core";
-import { TOOLBOX } from "./toolbox";
+import { TOOLBOX } from "@/blockly/toolbox";
 
 /**
  * Frozen at module scope: a new options object on every render would re-inject

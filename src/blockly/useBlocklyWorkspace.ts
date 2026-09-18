@@ -1,6 +1,7 @@
 import * as Blockly from "blockly/core";
 import "blockly/blocks";
 import { useEffect, useEffectEvent, useRef, type RefObject } from "react";
+import { ensureBlocklyLocale } from "@/blockly/locale";
 
 interface UseBlocklyWorkspaceResult {
   /** Attach to the element Blockly should fill. */
@@ -38,6 +39,8 @@ export function useBlocklyWorkspace({
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
+
+    ensureBlocklyLocale();
 
     const workspace = Blockly.inject(container, options);
     workspaceRef.current = workspace;
