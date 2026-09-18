@@ -97,7 +97,9 @@ Every action produces three things at once:
 - **Always import through the `@` alias. Never `./` or `../`.** `@` maps to
   `src/` in both `vite.config.ts` and `tsconfig.json`, so `@/blockly/locale`
   reads the same from anywhere and survives a file move. A relative import in
-  `src/` is a bug.
+  `src/` is a bug. The alias stops at `src/`, so the root config files are the
+  one exception: `vitest.config.ts` imports `./vite.config.ts` relatively
+  because no alias reaches outside `src/`.
 - No barrel files. Import the module you mean — a barrel drags unrelated code
   into the bundle and hides what a file actually depends on.
 - The Blockly editor integration lives in `src/blockly/`, voice capabilities in
@@ -154,8 +156,11 @@ argued in review.
 ## Testing
 
 Vitest, jsdom, Testing Library. Tests sit next to the code they cover as
-`*.test.ts` / `*.test.tsx`. Config lives in the `test` block of
-`vite.config.ts`, so the `@` alias resolves in tests for free.
+`*.test.ts` / `*.test.tsx`. Test config lives in `vitest.config.ts`, which
+merges `vite.config.ts` into itself — Vitest reads `vitest.config.ts` _instead
+of_ the Vite config, so the merge is what keeps the `@` alias resolving in
+tests. Keep app config in `vite.config.ts` and test config in the `test` block
+of `vitest.config.ts`; neither file needs to repeat the other.
 
 ```bash
 pnpm test           # vitest run — one pass, exits
