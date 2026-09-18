@@ -26,9 +26,7 @@ These are product decisions, not preferences. Do not relax them.
 3. **No mouse-only paths.** If an action can only be done by clicking, it is a
    bug. Keyboard and pointer input stay available, but voice must reach
    everything.
-4. **Localisation from the first commit.** All block labels and spoken strings
-   come from locale files. English, Amharic (am), Afaan Oromo (om).
-5. **Small on purpose.** One stage, one sprite, ~15 blocks. A reliable small
+4. **Small on purpose.** One stage, one sprite, ~15 blocks. A reliable small
    surface beats a broad unreliable one.
 
 ## Stack
@@ -46,7 +44,8 @@ These are product decisions, not preferences. Do not relax them.
 - Blockly is UMD, not ESM. If Vite complains, add
   `optimizeDeps: { include: ['blockly'] }`.
 - Use `renderer: 'zelos'` — rounded, Scratch-like, familiar to children.
-- Call `Blockly.setLocale()` at startup. This is the i18n hook.
+- Call `Blockly.setLocale()` at startup. `blockly/core` ships no messages, so
+  `inject` throws reading an aria label without it.
 
 **Do not install `react-blockly` or any wrapper.** It is unmaintained, has no
 TypeScript typings, and abstracts the workspace behind props. Our capabilities
@@ -103,8 +102,7 @@ Every action produces three things at once:
 - No barrel files. Import the module you mean — a barrel drags unrelated code
   into the bundle and hides what a file actually depends on.
 - The Blockly editor integration lives in `src/blockly/`, voice capabilities in
-  `src/voice/`, our own block definitions in `src/blocks/`, locales in
-  `src/locales/`.
+  `src/voice/`, our own block definitions in `src/blocks/`.
 - Small commits, conventional prefixes (`feat:`, `fix:`, `docs:`, `refactor:`,
   `chore:`, `test:`, `perf:`, `build:`, `ci:`).
 - Never rewrite git history. No force-push, no squashing the initial commits.

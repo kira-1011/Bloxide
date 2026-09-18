@@ -106,7 +106,6 @@ src/
   blockly/      the block editor: workspace hook, toolbox, options, locale
   blocks/       our own block definitions
   voice/        Voxide capabilities and handlers
-  locales/      en, am, om
 ```
 
 ## Progress
