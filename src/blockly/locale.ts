@@ -7,8 +7,6 @@ let installed = false;
  * `blockly/core` ships no messages, so `inject` throws reading an aria label
  * until a locale is installed. Idempotent, and called from behind the editor
  * seam so the app shell never pulls Blockly into its bundle.
- *
- * This is the i18n hook: am and om swap in here.
  */
 export function initBlocklyLocale(): void {
   if (installed) return;

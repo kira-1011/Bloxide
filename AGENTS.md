@@ -26,9 +26,7 @@ These are product decisions, not preferences. Do not relax them.
 3. **No mouse-only paths.** If an action can only be done by clicking, it is a
    bug. Keyboard and pointer input stay available, but voice must reach
    everything.
-4. **Localisation from the first commit.** All block labels and spoken strings
-   come from locale files. English, Amharic (am), Afaan Oromo (om).
-5. **Small on purpose.** One stage, one sprite, ~15 blocks. A reliable small
+4. **Small on purpose.** One stage, one sprite, ~15 blocks. A reliable small
    surface beats a broad unreliable one.
 
 ## Stack
@@ -46,7 +44,8 @@ These are product decisions, not preferences. Do not relax them.
 - Blockly is UMD, not ESM. If Vite complains, add
   `optimizeDeps: { include: ['blockly'] }`.
 - Use `renderer: 'zelos'` — rounded, Scratch-like, familiar to children.
-- Call `Blockly.setLocale()` at startup. This is the i18n hook.
+- Call `Blockly.setLocale()` at startup. `blockly/core` ships no messages, so
+  `inject` throws reading an aria label without it.
 
 **Do not install `react-blockly` or any wrapper.** It is unmaintained, has no
 TypeScript typings, and abstracts the workspace behind props. Our capabilities
@@ -103,8 +102,7 @@ Every action produces three things at once:
 - No barrel files. Import the module you mean — a barrel drags unrelated code
   into the bundle and hides what a file actually depends on.
 - The Blockly editor integration lives in `src/blockly/`, voice capabilities in
-  `src/voice/`, our own block definitions in `src/blocks/`, locales in
-  `src/locales/`.
+  `src/voice/`, our own block definitions in `src/blocks/`.
 - Small commits, conventional prefixes (`feat:`, `fix:`, `docs:`, `refactor:`,
   `chore:`, `test:`, `perf:`, `build:`, `ci:`).
 - Never rewrite git history. No force-push, no squashing the initial commits.
@@ -282,9 +280,26 @@ ports instead.
 `pnpm install` per worktree; `node_modules` is not shared. Copy `.env` across —
 it is gitignored, so a fresh worktree has no Voxide key.
 
-When the branch merges: `git worktree remove ../bloxide-voice`. `git worktree
-list` shows what is live, and a branch can only be checked out in one worktree
-at a time.
+**Clean up as soon as the PR merges.** A stale worktree is a second copy of the
+repo drifting out of date, and its branch blocks anyone from checking that
+branch out elsewhere:
+
+```bash
+cd /path/to/main/checkout
+git worktree remove ../bloxide-voice
+git push origin --delete feat/voice-add-block
+git pull
+```
+
+`git worktree list` should show only the main checkout once the work has
+landed. If a worktree directory was deleted by hand, `git worktree prune` clears
+the leftover bookkeeping. A branch can only be checked out in one worktree at a
+time.
+
+One gotcha: `gh pr merge` run from inside a worktree fails its local step with
+`fatal: 'main' is already used by worktree at ...`. The merge on GitHub still
+succeeds — it is only gh's attempt to switch the local branch afterwards that
+fails. Check the PR state rather than the exit code.
 
 ## Out of scope
 

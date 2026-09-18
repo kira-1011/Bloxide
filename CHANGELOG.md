@@ -33,6 +33,4 @@ Day one. The editor works end to end; nothing is voice-driven yet.
 ### Next
 
 - The voice layer: speaking a block into existence.
-- Locale files — English, Amharic and Afaan Oromo — for every label and spoken
-  confirmation.
 - The Bloxide block set: one stage, one sprite, about fifteen blocks.
