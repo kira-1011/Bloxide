@@ -9,10 +9,12 @@ interface Category {
   kind: "category";
   name: string;
   categorystyle: string;
-  contents: BlockEntry[];
+  contents: readonly BlockEntry[];
 }
 
-const CATEGORIES: Category[] = [
+// `as const` is what gives BlockType its literal union; `satisfies` keeps the
+// shape checked without widening it back to string.
+const CATEGORIES = [
   {
     kind: "category",
     name: "Logic",
@@ -46,18 +48,25 @@ const CATEGORIES: Category[] = [
       { kind: "block", type: "text_print" },
     ],
   },
-];
+] as const satisfies readonly Category[];
 
 /** Starter toolbox built from Blockly's own library blocks. */
 export const TOOLBOX: Blockly.utils.toolbox.ToolboxDefinition = {
   kind: "categoryToolbox",
-  contents: CATEGORIES,
+  // Copied because Blockly wants a mutable array and CATEGORIES is frozen.
+  contents: CATEGORIES.map((category) => ({ ...category, contents: [...category.contents] })),
 };
+
+export type BlockType = (typeof CATEGORIES)[number]["contents"][number]["type"];
 
 /**
  * The same types the toolbox offers, as the enum the voice agent picks from.
  * Derived so a block can never be reachable by hand but not by voice.
  */
-export const BLOCK_TYPES: readonly string[] = CATEGORIES.flatMap((category) =>
+export const BLOCK_TYPES: readonly BlockType[] = CATEGORIES.flatMap((category) =>
   category.contents.map((entry) => entry.type),
 );
+
+export function isBlockType(value: string): value is BlockType {
+  return (BLOCK_TYPES as readonly string[]).includes(value);
+}

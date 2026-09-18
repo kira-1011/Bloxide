@@ -34,6 +34,15 @@ describe("addBlock", () => {
     expect(spoken).toContain("Added");
   });
 
+  it("refuses a real Blockly block we do not ship", async () => {
+    // text_join is in Blockly's registry but not our toolbox. Checking the
+    // registry instead of the toolbox would quietly add it.
+    const spoken = await addBlock({ type: "text_join" });
+
+    expect(spoken).toBe("I do not know a block called text_join.");
+    expect(workspace.getAllBlocks(false)).toHaveLength(0);
+  });
+
   it("says so instead of throwing when the type is not a block", async () => {
     // What a child actually says. The model passes the word through, and
     // Blockly's id for this block is controls_repeat_ext.

@@ -1,6 +1,6 @@
 import type { VoxideActionConfig } from "@voxide/react";
 import { getActiveWorkspace } from "@/blockly/activeWorkspace";
-import { BLOCK_TYPES } from "@/blockly/toolbox";
+import { BLOCK_TYPES, isBlockType } from "@/blockly/toolbox";
 
 // Every capability the agent can invoke. One block, one connection or one value
 // per utterance, and never `dangerous: true` — it asks for a click to confirm.
@@ -10,12 +10,14 @@ import { BLOCK_TYPES } from "@/blockly/toolbox";
 // time a handler runs, the editor chunk has already loaded it.
 export async function addBlock({ type }: { type: string }): Promise<string> {
   const workspace = getActiveWorkspace();
-  const { Blocks, BlockSvg } = await import("blockly/core");
 
-  if (!Blocks[type]) {
+  // Against our toolbox, not Blockly's registry: the enum only steers the
+  // model, and the registry would accept hundreds of blocks we do not ship.
+  if (!isBlockType(type)) {
     return `I do not know a block called ${type}.`;
   }
 
+  const { BlockSvg } = await import("blockly/core");
   const block = workspace.newBlock(type);
   // A headless workspace has no SVG to build; a rendered one needs both calls
   // or the block exists in the model and never appears on screen.
@@ -34,8 +36,8 @@ export const VOICE_ACTIONS: Record<string, VoxideActionConfig> = {
       type: {
         type: "string",
         required: true,
-        // Without the enum the model passes the child's word through — "repeat"
-        // rather than controls_repeat_ext — and nothing matches.
+        // Without the enum the model passes the child's word through —
+        // "repeat" rather than controls_repeat_ext — and nothing matches.
         enum: [...BLOCK_TYPES],
         description: "The Blockly type id of the block to add",
       },
