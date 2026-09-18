@@ -143,12 +143,18 @@ before working in its area, not after.
   moves it" means delete. It found the barrel and the editor spread across
   three directories.
 - **`changelog-generator`** — whenever `CHANGELOG.md` is updated. See Changelog
-  below. Installed into the repo at `.agents/skills/`, so it travels with a
-  clone; the other two are global.
+  below.
+
+All three are committed to the repo under `.agents/skills/`, so a clone has them
+without anyone installing anything. `skills-lock.json` pins the versions. The
+`.claude/skills/` symlinks are machine-local and gitignored — recreate them with
+`npx skills install` if your agent reads from there.
+
+To update a skill, re-run its install from the repo root and commit the diff:
 
 ```bash
-npx skills add vercel-labs/agent-skills@vercel-react-best-practices -g -y
-npx skills add mattpocock/skills@improve-codebase-architecture -g -y
+npx skills add vercel-labs/agent-skills@vercel-react-best-practices -y
+npx skills add mattpocock/skills@improve-codebase-architecture -y
 npx skills add https://github.com/composiohq/awesome-claude-skills --skill changelog-generator
 ```
 

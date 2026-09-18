@@ -17,8 +17,6 @@ Day one. The editor works end to end; nothing is voice-driven yet.
   panel on the page.
 - **The program survives a reload.** Blocks are saved as they change and
   restored when the page opens, so nothing is lost to a stray refresh.
-- **Tests and CI.** 29 tests covering the editor, the runner and saving. Every
-  pull request is checked automatically before it can merge.
 
 ### Why it is built this way
 
