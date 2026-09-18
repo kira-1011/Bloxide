@@ -107,8 +107,19 @@ Every action produces three things at once:
   `chore:`, `test:`, `perf:`, `build:`, `ci:`).
 - Never rewrite git history. No force-push, no squashing the initial commits.
   Amending a commit that has not been pushed is fine.
-- Never credit an AI agent as commit author or co-author, and no generated-by
-  footers in commits or PR bodies.
+- **Never credit an AI agent as commit author or co-author.** No
+  `Co-Authored-By:` trailer naming an agent, no "generated with" footer, in
+  commit messages or PR bodies. The repository's git identity is the only
+  author on the record.
+
+## Code Comments
+
+Write minimal comments. Code should be self-documenting.
+
+- Comment only the non-obvious WHY (constraints, workarounds, invariants).
+- Never restate WHAT the code does (e.g., avoid `// Create a new Map`).
+- Keep docstrings on public APIs per language convention.
+- Never remove existing human comments unless the code functionality changes.
 
 ## Skills
 
@@ -199,8 +210,8 @@ docs/readme-setup         test/capability-handlers
 ```
 
 Keep the summary two to four words. Branch from `main`, never from another
-feature branch. One concern per branch — if the name needs an "and", it is two
-branches.
+feature branch, and create it with `git worktree add` (see Worktrees). One
+concern per branch — if the name needs an "and", it is two branches.
 
 ## Pull requests
 
@@ -215,18 +226,26 @@ branches.
 
 ## Worktrees
 
-Two feature branches at once means two worktrees, not `git stash`. Blockly's
-dev server and `node_modules` are per-directory, so switching branches in one
-checkout re-optimises dependencies every time.
+**Always start new work in a new worktree.** Never `git checkout -b` in the
+main checkout, and never `git stash` to move between pieces of work.
 
 ```bash
 git worktree add ../bloxide-voice -b feat/voice-add-block
 cd ../bloxide-voice && pnpm install
 ```
 
-`pnpm install` per worktree — `node_modules` is not shared. When the branch
-merges, `git worktree remove ../bloxide-voice`. `git worktree list` shows what
-is live; a branch can only be checked out in one worktree at a time.
+Why: `main` stays clean and runnable, so you can always check what shipped
+without disturbing work in progress. Blockly's dev server and `node_modules`
+are per-directory, so switching branches inside one checkout re-optimises
+dependencies every time — two worktrees keep two dev servers alive on their own
+ports instead.
+
+`pnpm install` per worktree; `node_modules` is not shared. Copy `.env` across —
+it is gitignored, so a fresh worktree has no Voxide key.
+
+When the branch merges: `git worktree remove ../bloxide-voice`. `git worktree
+list` shows what is live, and a branch can only be checked out in one worktree
+at a time.
 
 ## Out of scope
 

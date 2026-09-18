@@ -4,18 +4,15 @@ import { useEffect } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { useBlocklyWorkspace } from "@/blockly/useBlocklyWorkspace";
 
-/**
- * Blockly measures real SVG geometry, which jsdom does not implement, so the
- * library is mocked at the seam. What is under test is our adapter — that it
- * injects once, tears down completely, and does not re-inject when it should
- * not — not Blockly's rendering.
- */
+// jsdom has no SVG geometry, so Blockly is mocked: the adapter is the subject.
 const dispose = vi.fn();
 const addChangeListener = vi.fn();
 const removeChangeListener = vi.fn();
 const inject = vi.fn();
 const svgResize = vi.fn();
-const ensureBlocklyLocale = vi.fn();
+const initBlocklyLocale = vi.fn();
+const loadWorkspace = vi.fn();
+const saveWorkspace = vi.fn();
 
 const observe = vi.fn();
 const disconnect = vi.fn();
@@ -26,7 +23,12 @@ vi.mock(import("blockly/core"), () => ({
 }));
 vi.mock(import("blockly/blocks"), () => ({}));
 vi.mock(import("@/blockly/locale"), () => ({
-  ensureBlocklyLocale: () => ensureBlocklyLocale(),
+  initBlocklyLocale: () => initBlocklyLocale(),
+}));
+vi.mock(import("@/blockly/storage"), () => ({
+  loadWorkspace: (...args: unknown[]) => loadWorkspace(...args),
+  saveWorkspace: (...args: unknown[]) => saveWorkspace(...args),
+  clearWorkspace: vi.fn(),
 }));
 
 const OPTIONS = { renderer: "zelos" } as Blockly.BlocklyOptions;
@@ -83,8 +85,8 @@ describe("useBlocklyWorkspace", () => {
   it("installs the locale before injecting, or inject throws on an aria label", () => {
     render(<Harness />);
 
-    expect(ensureBlocklyLocale).toHaveBeenCalled();
-    expect(ensureBlocklyLocale.mock.invocationCallOrder[0]).toBeLessThan(
+    expect(initBlocklyLocale).toHaveBeenCalled();
+    expect(initBlocklyLocale.mock.invocationCallOrder[0]).toBeLessThan(
       inject.mock.invocationCallOrder[0] ?? Number.POSITIVE_INFINITY,
     );
   });
@@ -92,7 +94,6 @@ describe("useBlocklyWorkspace", () => {
   it("exposes the live workspace on a ref rather than in state", () => {
     const workspace = makeWorkspace();
     inject.mockReturnValue(workspace);
-    // One entry per committed render, holding what the ref read at that point.
     const commits: (Blockly.WorkspaceSvg | null)[] = [];
 
     function ReadsRef() {
@@ -105,8 +106,7 @@ describe("useBlocklyWorkspace", () => {
 
     render(<ReadsRef />);
 
-    // State would have re-rendered React to publish the workspace; a ref does
-    // not, and the child adds blocks far too often to pay that cost.
+    // One commit: publishing via state would have cost a second render.
     expect(commits).toEqual([workspace]);
   });
 
@@ -157,6 +157,25 @@ describe("useBlocklyWorkspace", () => {
 
     expect(second).toHaveBeenCalledTimes(1);
     expect(first).not.toHaveBeenCalled();
+  });
+
+  it("restores the saved program before listening for changes", () => {
+    render(<Harness />);
+
+    expect(loadWorkspace).toHaveBeenCalledTimes(1);
+    expect(loadWorkspace.mock.invocationCallOrder[0]).toBeLessThan(
+      addChangeListener.mock.invocationCallOrder[0] ?? Number.POSITIVE_INFINITY,
+    );
+  });
+
+  it("saves on a real change but not on a UI event", () => {
+    render(<Harness />);
+
+    emit({ isUiEvent: true });
+    expect(saveWorkspace).not.toHaveBeenCalled();
+
+    emit({ isUiEvent: false });
+    expect(saveWorkspace).toHaveBeenCalledTimes(1);
   });
 
   it("re-injects when the options object changes", () => {

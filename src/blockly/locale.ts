@@ -4,15 +4,13 @@ import * as en from "blockly/msg/en";
 let installed = false;
 
 /**
- * `blockly/core` ships no messages, so every `Blockly.Msg.*` lookup is
- * undefined until a locale is installed — including the aria labels read during
- * `inject`, which throws without this.
+ * `blockly/core` ships no messages, so `inject` throws reading an aria label
+ * until a locale is installed. Idempotent, and called from behind the editor
+ * seam so the app shell never pulls Blockly into its bundle.
  *
- * Idempotent, and called from behind the editor seam rather than the entry
- * module, so the app shell never pulls Blockly into its bundle. This is also
- * the i18n hook: am and om swap in here.
+ * This is the i18n hook: am and om swap in here.
  */
-export function ensureBlocklyLocale(): void {
+export function initBlocklyLocale(): void {
   if (installed) return;
   installed = true;
   Blockly.setLocale(en as unknown as Record<string, string>);

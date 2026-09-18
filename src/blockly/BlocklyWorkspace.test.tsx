@@ -1,4 +1,4 @@
-import { render } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import BlocklyWorkspace from "@/blockly/BlocklyWorkspace";
 import { WORKSPACE_OPTIONS } from "@/blockly/options";
@@ -10,7 +10,7 @@ vi.mock(import("blockly/core"), () => ({
   svgResize: vi.fn(),
 }));
 vi.mock(import("blockly/blocks"), () => ({}));
-vi.mock(import("@/blockly/locale"), () => ({ ensureBlocklyLocale: vi.fn() }));
+vi.mock(import("@/blockly/locale"), () => ({ initBlocklyLocale: vi.fn() }));
 
 beforeEach(() => {
   vi.stubGlobal(
@@ -34,12 +34,20 @@ afterEach(() => {
 });
 
 describe("BlocklyWorkspace", () => {
-  it("injects into a container that fills its parent", () => {
-    const { container } = render(<BlocklyWorkspace />);
+  it("injects into the canvas between the controls and the output", () => {
+    render(<BlocklyWorkspace />);
 
-    const mount = container.firstElementChild;
-    expect(mount).toHaveClass("h-full", "w-full");
-    expect(inject).toHaveBeenCalledWith(mount, WORKSPACE_OPTIONS);
+    const [element, options] = inject.mock.calls[0] as [HTMLElement, unknown];
+    expect(options).toBe(WORKSPACE_OPTIONS);
+    // The canvas takes the leftover height; controls and output bracket it.
+    expect(element).toHaveClass("flex-1");
+  });
+
+  it("offers run and stop controls", () => {
+    render(<BlocklyWorkspace />);
+
+    expect(screen.getByRole("button", { name: "Run program" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Stop program" })).toBeDisabled();
   });
 
   it("passes the shared options object, so a render never re-injects", () => {
