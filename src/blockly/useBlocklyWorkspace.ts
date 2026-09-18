@@ -1,16 +1,13 @@
 import * as Blockly from "blockly/core";
 import "blockly/blocks";
 import { useEffect, useEffectEvent, useRef, type RefObject } from "react";
-import { ensureBlocklyLocale } from "@/blockly/locale";
+import { initBlocklyLocale } from "@/blockly/locale";
+import { loadWorkspace, saveWorkspace } from "@/blockly/storage";
 
 interface UseBlocklyWorkspaceResult {
   /** Attach to the element Blockly should fill. */
   readonly containerRef: RefObject<HTMLDivElement | null>;
-  /**
-   * The live workspace. A ref, not state — Blockly mutates it in place, so
-   * re-rendering React on every block change would be pure waste, and the
-   * voice capabilities need the object itself rather than a snapshot.
-   */
+  /** A ref, not state: Blockly mutates in place and voice needs the object. */
   readonly workspaceRef: RefObject<Blockly.WorkspaceSvg | null>;
 }
 
@@ -30,8 +27,8 @@ export function useBlocklyWorkspace({
   const containerRef = useRef<HTMLDivElement | null>(null);
   const workspaceRef = useRef<Blockly.WorkspaceSvg | null>(null);
 
-  // Keeps a changing onChange identity out of the effect's deps, so a caller
-  // passing an inline arrow does not tear down the workspace on every render.
+  // Keeps onChange out of the effect deps: an inline arrow would otherwise
+  // re-inject on every render and throw away the child's program.
   const handleChange = useEffectEvent((workspace: Blockly.WorkspaceSvg) => {
     onChange?.(workspace);
   });
@@ -40,19 +37,22 @@ export function useBlocklyWorkspace({
     const container = containerRef.current;
     if (!container) return;
 
-    ensureBlocklyLocale();
+    initBlocklyLocale();
 
     const workspace = Blockly.inject(container, options);
     workspaceRef.current = workspace;
 
+    // Restore before listening, or the load is heard as a change.
+    loadWorkspace(workspace);
+
     const listener = (event: Blockly.Events.Abstract) => {
       if (event.isUiEvent) return;
+      saveWorkspace(workspace);
       handleChange(workspace);
     };
     workspace.addChangeListener(listener);
 
-    // Blockly measures its container once; without this the canvas is the
-    // wrong size after any layout change.
+    // Blockly measures its container once.
     const observer = new ResizeObserver(() => Blockly.svgResize(workspace));
     observer.observe(container);
 

@@ -1,10 +1,7 @@
 import type * as Blockly from "blockly/core";
 import { TOOLBOX } from "@/blockly/toolbox";
 
-/**
- * Frozen at module scope: a new options object on every render would re-inject
- * the workspace and throw away the child's program.
- */
+/** Module scope: a fresh object each render would re-inject the workspace. */
 export const WORKSPACE_OPTIONS: Blockly.BlocklyOptions = {
   toolbox: TOOLBOX,
   renderer: "zelos",
