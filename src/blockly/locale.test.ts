@@ -14,11 +14,11 @@ afterEach(() => {
   vi.clearAllMocks();
 });
 
-describe("ensureBlocklyLocale", () => {
+describe("initBlocklyLocale", () => {
   it("installs the messages blockly/core ships without", async () => {
-    const { ensureBlocklyLocale } = await import("@/blockly/locale");
+    const { initBlocklyLocale } = await import("@/blockly/locale");
 
-    ensureBlocklyLocale();
+    initBlocklyLocale();
 
     expect(setLocale).toHaveBeenCalledTimes(1);
     expect(setLocale).toHaveBeenCalledWith(
@@ -27,11 +27,11 @@ describe("ensureBlocklyLocale", () => {
   });
 
   it("is idempotent, so a remounting editor installs once", async () => {
-    const { ensureBlocklyLocale } = await import("@/blockly/locale");
+    const { initBlocklyLocale } = await import("@/blockly/locale");
 
-    ensureBlocklyLocale();
-    ensureBlocklyLocale();
-    ensureBlocklyLocale();
+    initBlocklyLocale();
+    initBlocklyLocale();
+    initBlocklyLocale();
 
     expect(setLocale).toHaveBeenCalledTimes(1);
   });
