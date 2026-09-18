@@ -35,6 +35,7 @@ These are product decisions, not preferences. Do not relax them.
 
 - pnpm, Vite, React 18+, TypeScript
 - oxlint + oxfmt (Oxc) for linting and formatting
+- Vitest + Testing Library (jsdom) for tests
 - Tailwind CSS (`@tailwindcss/vite`)
 - `blockly` (core, direct)
 - `@voxide/react` (voice)
@@ -139,6 +140,53 @@ npx skills add mattpocock/skills@improve-codebase-architecture -g -y
 Prefer them over improvising a style: a rule from a skill beats a preference
 argued in review.
 
+## Testing
+
+Vitest, jsdom, Testing Library. Tests sit next to the code they cover as
+`*.test.ts` / `*.test.tsx`. Config lives in the `test` block of
+`vite.config.ts`, so the `@` alias resolves in tests for free.
+
+```bash
+pnpm test           # vitest run — one pass, exits
+pnpm test:watch     # interactive
+pnpm test:coverage  # v8 coverage
+```
+
+**Always `pnpm test`, never bare `vitest`.** Watch mode never exits and will
+hang an agent.
+
+What is worth testing here:
+
+- The seams we own. `useBlocklyWorkspace` is the adapter over Blockly's
+  imperative API: it must inject once, tear down completely, and never
+  re-inject over a child's program.
+- Behaviour a reader would otherwise have to rediscover — that UI events do not
+  fire `onChange`, that the locale installs before `inject`.
+- Data against reality: toolbox entries are checked against Blockly's real
+  block registry, because a typo'd type shows up as an empty category rather
+  than an error.
+
+Not Blockly's rendering. jsdom has no SVG geometry, so Blockly is mocked at the
+module boundary in hook and component tests.
+
+### Writing tests with an agent
+
+From Vitest's own guidance (see Docs), plus what has bitten us:
+
+- **Assert behaviour, not existence.** `toBeDefined()` as the only assertion on
+  a value is not a test.
+- **Do not over-mock.** Mock at the boundary with the outside world; mocking our
+  own modules tests the mock. One `vi.mock` of a third party beats five of ours.
+- **`vi.*`, never `jest.*`.** They are different libraries with similar names.
+- **Mock with the `import()` form** — `vi.mock(import("@/blockly/locale"), …)`
+  — not a string path. It is typo-proof and follows renames.
+- **Ask for the hard cases explicitly**: unmount, double-mount under
+  StrictMode, empty input, the failure branch. An agent left to itself writes
+  the happy path.
+- `restoreMocks` is on globally; do not rely on a mock implementation leaking
+  from one test into the next.
+- Keep test names short enough to scan in the runner's output.
+
 ## Branches
 
 Conventional branch names, `<type>/<short-kebab-summary>`, the type matching
@@ -224,6 +272,10 @@ Now maintained by the Raspberry Pi Foundation, supported by Google.
 - TypeScript — https://www.typescriptlang.org/docs/
 - Tailwind CSS — https://tailwindcss.com/docs
 - Tailwind + Vite setup — https://tailwindcss.com/docs/installation/using-vite
+- Vitest — https://vitest.dev
+- Vitest config reference — https://vitest.dev/config/
+- Writing tests with AI — https://vitest.dev/guide/learn/writing-tests-with-ai
+- Testing Library (React) — https://testing-library.com/docs/react-testing-library/intro
 - Oxc (oxlint, oxfmt) — https://oxc.rs
 - oxlint — https://oxc.rs/docs/guide/usage/linter.html
 - oxlint config reference —
