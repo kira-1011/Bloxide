@@ -1,7 +1,7 @@
 import * as Blockly from "blockly/core";
 import "blockly/blocks";
 import { describe, expect, it } from "vitest";
-import { TOOLBOX } from "@/blockly/toolbox";
+import { BLOCK_TYPES, TOOLBOX } from "@/blockly/toolbox";
 
 interface ToolboxCategory {
   kind: string;
@@ -11,9 +11,7 @@ interface ToolboxCategory {
 
 const categories = (TOOLBOX as { contents: ToolboxCategory[] }).contents;
 
-const blockTypes = categories.flatMap((category) =>
-  (category.contents ?? []).filter((item) => item.kind === "block").map((item) => item.type),
-);
+const blockTypes = BLOCK_TYPES;
 
 describe("TOOLBOX", () => {
   it("offers every block through a named category", () => {

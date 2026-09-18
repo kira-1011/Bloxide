@@ -1,5 +1,6 @@
 import type { VoxideActionConfig } from "@voxide/react";
 import { getActiveWorkspace } from "@/blockly/activeWorkspace";
+import { BLOCK_TYPES } from "@/blockly/toolbox";
 
 // Every capability the agent can invoke. One block, one connection or one value
 // per utterance, and never `dangerous: true` — it asks for a click to confirm.
@@ -29,7 +30,16 @@ export async function addBlock({ type }: { type: string }): Promise<string> {
 export const VOICE_ACTIONS: Record<string, VoxideActionConfig> = {
   addBlock: {
     description: "Add a block to the workspace",
-    params: { type: { type: "string", required: true } },
+    params: {
+      type: {
+        type: "string",
+        required: true,
+        // Without the enum the model passes the child's word through — "repeat"
+        // rather than controls_repeat_ext — and nothing matches.
+        enum: [...BLOCK_TYPES],
+        description: "The Blockly type id of the block to add",
+      },
+    },
     handler: async (args) => addBlock(args as { type: string }),
   },
 };

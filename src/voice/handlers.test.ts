@@ -3,7 +3,8 @@ import "blockly/blocks";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { setActiveWorkspace } from "@/blockly/activeWorkspace";
 import { initBlocklyLocale } from "@/blockly/locale";
-import { addBlock } from "@/voice/handlers";
+import { addBlock, VOICE_ACTIONS } from "@/voice/handlers";
+import { BLOCK_TYPES } from "@/blockly/toolbox";
 
 initBlocklyLocale();
 
@@ -19,6 +20,12 @@ afterEach(() => {
 });
 
 describe("addBlock", () => {
+  it("offers the model the toolbox types to choose from", () => {
+    // Without the enum the model passes the child's word — "repeat" — through.
+    expect(VOICE_ACTIONS.addBlock?.params?.type?.enum).toEqual([...BLOCK_TYPES]);
+    expect(BLOCK_TYPES).toContain("controls_repeat_ext");
+  });
+
   it("adds the block the agent asked for", async () => {
     const spoken = await addBlock({ type: "controls_repeat_ext" });
 
