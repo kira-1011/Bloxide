@@ -280,9 +280,26 @@ ports instead.
 `pnpm install` per worktree; `node_modules` is not shared. Copy `.env` across —
 it is gitignored, so a fresh worktree has no Voxide key.
 
-When the branch merges: `git worktree remove ../bloxide-voice`. `git worktree
-list` shows what is live, and a branch can only be checked out in one worktree
-at a time.
+**Clean up as soon as the PR merges.** A stale worktree is a second copy of the
+repo drifting out of date, and its branch blocks anyone from checking that
+branch out elsewhere:
+
+```bash
+cd /path/to/main/checkout
+git worktree remove ../bloxide-voice
+git push origin --delete feat/voice-add-block
+git pull
+```
+
+`git worktree list` should show only the main checkout once the work has
+landed. If a worktree directory was deleted by hand, `git worktree prune` clears
+the leftover bookkeeping. A branch can only be checked out in one worktree at a
+time.
+
+One gotcha: `gh pr merge` run from inside a worktree fails its local step with
+`fatal: 'main' is already used by worktree at ...`. The merge on GitHub still
+succeeds — it is only gh's attempt to switch the local branch afterwards that
+fails. Check the PR state rather than the exit code.
 
 ## Out of scope
 
