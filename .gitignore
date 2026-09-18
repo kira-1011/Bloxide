@@ -16,3 +16,6 @@ dist-ssr
 .playwright-mcp
 
 coverage
+
+# machine-local skill symlinks (see .agents/skills)
+.claude/

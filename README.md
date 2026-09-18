@@ -109,6 +109,10 @@ src/
   locales/      en, am, om
 ```
 
+## Progress
+
+[CHANGELOG.md](CHANGELOG.md) tracks what has shipped, newest first.
+
 ## Scope
 
 Bloxide is aimed at children with motor impairment and clear speech.

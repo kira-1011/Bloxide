@@ -125,8 +125,8 @@ Write minimal comments. Code should be self-documenting.
 
 ## Skills
 
-Two installed skills carry rules this project follows. Load the relevant one
-before writing code in its area, not after.
+Three installed skills carry rules this project follows. Load the relevant one
+before working in its area, not after.
 
 - **`vercel-react-best-practices`** — before writing or changing any React
   code: components, hooks, data fetching, bundle boundaries. It is the
@@ -142,16 +142,44 @@ before writing code in its area, not after.
   test: would removing this concentrate complexity, or just move it? "Just
   moves it" means delete. It found the barrel and the editor spread across
   three directories.
-
-Install both globally:
+- **`changelog-generator`** — whenever `CHANGELOG.md` is updated. See Changelog
+  below. Installed into the repo at `.agents/skills/`, so it travels with a
+  clone; the other two are global.
 
 ```bash
 npx skills add vercel-labs/agent-skills@vercel-react-best-practices -g -y
 npx skills add mattpocock/skills@improve-codebase-architecture -g -y
+npx skills add https://github.com/composiohq/awesome-claude-skills --skill changelog-generator
 ```
 
 Prefer them over improvising a style: a rule from a skill beats a preference
 argued in review.
+
+## Changelog
+
+`CHANGELOG.md` is the hackathon record: what shipped, when, in language a judge
+or a teacher can read. Update it whenever work lands on `main`, not at the end.
+
+Generate entries with the **`changelog-generator`** skill rather than writing
+them by hand — it reads the git history so the record matches what actually
+shipped:
+
+```
+Create a changelog entry for commits since <last entry date>
+```
+
+Then edit what it returns. It writes for a general software audience, and this
+project has a narrower one:
+
+- **Group by date, newest first.** One section per working day. This is a
+  progress log, not a release history — there are no versions yet.
+- **Say what a child can now do**, not what a module now contains. "Stop halts
+  a running program" beats "added stopProgram to the runner".
+- **Keep the accessibility reason visible** when a change has one. Why Run and
+  Stop are not click handlers matters more than that they exist.
+- **Skip internal noise.** Refactors, config, test plumbing and dependency
+  bumps stay out unless a reader would notice the difference.
+- **End with what is next**, and be honest about what is not built yet.
 
 ## Testing
 
