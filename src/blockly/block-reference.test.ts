@@ -1,8 +1,8 @@
 import * as Blockly from "blockly/core";
 import "blockly/blocks";
 import { beforeEach, describe, expect, it } from "vitest";
-import { findBlockByNumber } from "@/blockly/blockReference";
-import { getBlockNumber, numberBlocks } from "@/blockly/blockView";
+import { findBlockByNumber } from "@/blockly/block-reference";
+import { getBlockNumber, numberBlocks } from "@/blockly/block-view";
 import { initBlocklyLocale } from "@/blockly/locale";
 
 initBlocklyLocale();

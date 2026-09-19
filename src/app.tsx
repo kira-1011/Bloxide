@@ -1,9 +1,9 @@
 import { lazy, Suspense } from "react";
 
 // Both are heavy and neither is needed for the first paint.
-const BlocklyWorkspace = lazy(() => import("@/blockly/BlocklyWorkspace"));
+const BlocklyWorkspace = lazy(() => import("@/blockly/blockly-workspace"));
 const VoiceProvider = lazy(() =>
-  import("@/voice/VoiceProvider").then((m) => ({ default: m.VoiceProvider })),
+  import("@/voice/voice-provider").then((m) => ({ default: m.VoiceProvider })),
 );
 
 const WORKSPACE_FALLBACK = (

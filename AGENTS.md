@@ -74,7 +74,7 @@ drifts from it the moment either side gains a feature. What we lean on:
 
 Two exceptions, both because Blockly says so in its own docs:
 `common.getMainWorkspace()` is discouraged, so we hold the workspace ourselves
-in `src/blockly/activeWorkspace.ts`; and `common.setSelected()` is `@internal`,
+in `src/blockly/active-workspace.ts`; and `common.setSelected()` is `@internal`,
 so selection goes through `block.select()`.
 
 ## Voxide
@@ -129,6 +129,10 @@ is actually on the workspace rather than from what it believes it did.
   `src/` is a bug. The alias stops at `src/`, so the root config files are the
   one exception: `vitest.config.ts` imports `./vite.config.ts` relatively
   because no alias reaches outside `src/`.
+- **Source files are named in kebab-case** — `block-view.ts`,
+  `use-blockly-workspace.ts`, `voice-provider.tsx` — React components included,
+  so a file name never depends on the casing of what it exports, and a
+  case-insensitive filesystem cannot disagree with git about a rename.
 - No barrel files. Import the module you mean — a barrel drags unrelated code
   into the bundle and hides what a file actually depends on.
 - The Blockly editor integration lives in `src/blockly/`, voice capabilities in

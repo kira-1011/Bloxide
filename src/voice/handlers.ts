@@ -1,10 +1,9 @@
 import type { VoxideActionConfig } from "@voxide/react";
-import { defineAction } from "@/voice/defineAction";
-import { getActiveWorkspace } from "@/blockly/activeWorkspace";
+import { defineAction } from "@/voice/define-action";
+import { getActiveWorkspace } from "@/blockly/active-workspace";
 import { setFieldValue } from "@/blockly/block-fields";
-import { numberBlocks } from "@/blockly/blockView";
-import { revealBlock } from "@/blockly/blockView";
-import { forgetBlock, rememberBlock, resolveBlock } from "@/blockly/blockReference";
+import { numberBlocks, revealBlock } from "@/blockly/block-view";
+import { forgetBlock, rememberBlock, resolveBlock } from "@/blockly/block-reference";
 import { BLOCK_TYPES, resolveBlockType } from "@/blockly/toolbox";
 import { isProgramRunning, runProgram, stopProgram } from "@/run/runner";
 

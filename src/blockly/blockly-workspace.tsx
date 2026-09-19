@@ -1,8 +1,8 @@
 import { WORKSPACE_OPTIONS } from "@/blockly/options";
-import { useBlocklyWorkspace } from "@/blockly/useBlocklyWorkspace";
-import { OutputPanel } from "@/run/OutputPanel";
-import { RunControls } from "@/run/RunControls";
-import { useProgramRunner } from "@/run/useProgramRunner";
+import { useBlocklyWorkspace } from "@/blockly/use-blockly-workspace";
+import { OutputPanel } from "@/run/output-panel";
+import { RunControls } from "@/run/run-controls";
+import { useProgramRunner } from "@/run/use-program-runner";
 
 /** Default export: the entry of the lazily loaded editor chunk. */
 export default function BlocklyWorkspace() {

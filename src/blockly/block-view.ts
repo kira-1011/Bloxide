@@ -1,5 +1,5 @@
 import type * as Blockly from "blockly/core";
-import { BlockNumberIcon } from "@/blockly/BlockNumberIcon";
+import { BlockNumberIcon } from "@/blockly/block-number-icon";
 
 // What someone sees of a block: the number it wears, and whether it is on
 // screen at all.
