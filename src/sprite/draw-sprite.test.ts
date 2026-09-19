@@ -22,6 +22,7 @@ function recordingContext() {
     fillRect: record("fillRect"),
     translate: record("translate"),
     rotate: record("rotate"),
+    scale: record("scale"),
     drawImage: record("drawImage"),
     beginPath: record("beginPath"),
     arc: record("arc"),
@@ -56,20 +57,32 @@ describe("drawSprite", () => {
     expect(ctx.argsOf("translate")[0]).toEqual([STAGE_WIDTH / 2 + 40, STAGE_HEIGHT / 2 - 60]);
   });
 
-  it("does not turn the sprite when it faces the default direction", () => {
+  it("leaves the sprite unflipped while it faces right", () => {
     const ctx = recordingContext();
 
     drawSprite(ctx, DEFAULT_SPRITE, image);
 
-    expect(ctx.argsOf("rotate")[0]).toEqual([0]);
+    expect(ctx.argsOf("scale")).toHaveLength(0);
   });
 
-  it("turns the sprite with its heading", () => {
+  it("mirrors the sprite when it faces left", () => {
     const ctx = recordingContext();
 
-    drawSprite(ctx, { ...DEFAULT_SPRITE, direction: 180 }, image);
+    drawSprite(ctx, { ...DEFAULT_SPRITE, direction: -90 }, image);
 
-    expect(ctx.argsOf("rotate")[0]).toEqual([Math.PI / 2]);
+    expect(ctx.argsOf("scale")[0]).toEqual([-1, 1]);
+  });
+
+  it("keeps the sprite upright at every heading", () => {
+    // A character who stands up is upside down if the heading turns it, which
+    // reads as a bug rather than as a direction.
+    for (const direction of [0, 45, 90, 135, 180, -45, -135]) {
+      const ctx = recordingContext();
+
+      drawSprite(ctx, { ...DEFAULT_SPRITE, direction }, image);
+
+      expect(ctx.argsOf("rotate")).toHaveLength(0);
+    }
   });
 
   it("draws a shape when the art has not loaded", () => {

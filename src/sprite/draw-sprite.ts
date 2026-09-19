@@ -5,18 +5,19 @@ import { type SpriteState, STAGE_HEIGHT, STAGE_WIDTH } from "@/sprite/sprite-sta
 // checking hard lives in sprite-state.ts instead.
 
 /** Drawn height at 100%, so the sprite is a comfortable share of the stage. */
-const BASE_HEIGHT = 84;
+const BASE_HEIGHT = 130;
 const HIDDEN_ALPHA = 0.15;
 
 /**
- * Turns with the heading rather than flipping left to right.
+ * Which way the sprite faces, as a left-right flip rather than a turn.
  *
- * A side-on costume would flip, the way Scratch does it, but the animal art
- * faces the viewer and has no left or right to mirror — turning is the only way
- * the heading shows on screen.
+ * Scratch calls this the left-right rotation style and uses it for exactly this
+ * reason: the costume is a character who stands up. Turning it with the heading
+ * would leave it upside down at anything past horizontal, which reads as a bug
+ * rather than as a direction.
  */
-function orientation(direction: number): number {
-  return ((direction - 90) * Math.PI) / 180;
+function facesLeft(direction: number): boolean {
+  return direction < 0;
 }
 
 function drawBubble(ctx: CanvasRenderingContext2D, text: string): void {
@@ -53,7 +54,7 @@ export function drawSprite(
   if (!sprite.visible) ctx.globalAlpha = HIDDEN_ALPHA;
 
   ctx.save();
-  ctx.rotate(orientation(sprite.direction));
+  if (facesLeft(sprite.direction)) ctx.scale(-1, 1);
   const scale = sprite.size / 100;
 
   // A failed image reports complete as well as a loaded one, and drawing one

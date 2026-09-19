@@ -5,7 +5,7 @@ import { describeSprite, STAGE_HEIGHT, STAGE_WIDTH } from "@/sprite/sprite-state
 import { drawSprite } from "@/sprite/draw-sprite";
 import { useSprite } from "@/sprite/use-sprite";
 
-const SPRITE_SRC = "/sprite/panda.png";
+const SPRITE_SRC = "/sprite/robot.png";
 
 /**
  * Loaded once for the life of the page rather than per mount: the art is the
