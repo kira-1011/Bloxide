@@ -1,5 +1,6 @@
 import * as Blockly from "blockly/core";
 import "blockly/blocks";
+import "@/blocks/sprite-blocks";
 import { useEffect, useEffectEvent, useRef, type RefObject } from "react";
 import { setActiveWorkspace } from "@/blockly/active-workspace";
 import { numberBlocks } from "@/blockly/block-view";

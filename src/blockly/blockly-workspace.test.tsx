@@ -5,10 +5,14 @@ import { WORKSPACE_OPTIONS } from "@/blockly/options";
 
 const inject = vi.fn();
 
-vi.mock(import("blockly/core"), () => ({
-  inject: (...args: unknown[]) => inject(...args),
-  svgResize: vi.fn(),
-}));
+// Partial, so the real core still defines blocks and themes while injection is
+// faked. Blockly is CJS, so its named exports hang off `default` rather than
+// spreading out of the namespace — hence the second spread.
+vi.mock(import("blockly/core"), async (importOriginal) => {
+  const actual = await importOriginal();
+  const named: Record<string, unknown> = { ...actual, ...Reflect.get(actual, "default") };
+  return { ...named, inject: (...args: unknown[]) => inject(...args), svgResize: vi.fn() };
+});
 vi.mock(import("blockly/blocks"), () => ({}));
 // Mocked like locale and storage: the icon subclass needs a real Blockly.
 vi.mock(import("@/blockly/block-view"), () => ({

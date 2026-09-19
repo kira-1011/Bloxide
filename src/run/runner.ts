@@ -1,5 +1,6 @@
 import type * as Blockly from "blockly/core";
 import { javascriptGenerator, Order } from "blockly/javascript";
+import "@/blocks/sprite-generators";
 import { createStore } from "zustand/vanilla";
 import { ProgramStopped } from "@/run/program-stopped";
 import { createSpriteApi, type RunSession } from "@/sprite/sprite-api";
