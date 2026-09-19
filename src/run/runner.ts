@@ -1,5 +1,6 @@
 import type * as Blockly from "blockly/core";
 import { javascriptGenerator, Order } from "blockly/javascript";
+import { createStore } from "zustand/vanilla";
 
 /** Thrown by the loop trap to unwind a stopped program. */
 class ProgramStopped extends Error {}
@@ -20,29 +21,17 @@ interface Run {
   cancelled: boolean;
 }
 
+// A handle the cancellation guards compare by identity, not reactive state.
 let currentRun: Run | null = null;
 
 // The state lives here rather than in React because a program can be started by
 // a button or by voice, and both must see the same run.
-let state: RunState = { running: false, output: [], error: null };
-const listeners = new Set<() => void>();
+const store = createStore<RunState>()(() => ({ running: false, output: [], error: null }));
 
-function setState(patch: Partial<RunState>): void {
-  state = { ...state, ...patch };
-  for (const listener of listeners) listener();
-}
+export const subscribeToRun = store.subscribe;
 
-export function subscribeToRun(listener: () => void): () => void {
-  listeners.add(listener);
-  return () => {
-    listeners.delete(listener);
-  };
-}
-
-/** Stable between changes, as useSyncExternalStore requires. */
-export function getRunState(): RunState {
-  return state;
-}
+/** Stable between changes, as the React binding requires. */
+export const getRunState = (): RunState => store.getState();
 
 // window.alert cannot be dismissed by voice.
 javascriptGenerator.forBlock["text_print"] = (block, generator) => {
@@ -65,7 +54,7 @@ export async function runProgram(workspace: Blockly.Workspace): Promise<void> {
 
   const run: Run = { cancelled: false };
   currentRun = run;
-  setState({ running: true, output: [], error: null });
+  store.setState({ running: true, output: [], error: null });
 
   // Without a yield inside loops the program holds the main thread and Stop
   // never gets a chance to land.
@@ -81,7 +70,9 @@ export async function runProgram(workspace: Blockly.Workspace): Promise<void> {
   };
   const print = (value: unknown): void => {
     if (currentRun !== run) return;
-    setState({ output: [...state.output, { id: state.output.length, text: String(value) }] });
+    store.setState(({ output }) => ({
+      output: [...output, { id: output.length, text: String(value) }],
+    }));
   };
 
   try {
@@ -93,12 +84,15 @@ export async function runProgram(workspace: Blockly.Workspace): Promise<void> {
     await program(tick, print);
   } catch (error) {
     if (!(error instanceof ProgramStopped) && currentRun === run) {
-      setState({ error: error instanceof Error ? error.message : String(error) });
+      store.setState({ error: error instanceof Error ? error.message : String(error) });
     }
   } finally {
     if (currentRun === run) {
       currentRun = null;
-      setState({ running: false });
+      store.setState({ running: false });
     }
   }
 }
+
+/** For `useStore` in components; everything else goes through the functions above. */
+export { store as runStore };

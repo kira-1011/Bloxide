@@ -1,6 +1,7 @@
 import type * as Blockly from "blockly/core";
-import { type RefObject, useCallback, useSyncExternalStore } from "react";
-import { getRunState, type RunState, runProgram, stopProgram, subscribeToRun } from "@/run/runner";
+import { type RefObject, useCallback } from "react";
+import { useStore } from "zustand";
+import { type RunState, runProgram, runStore, stopProgram } from "@/run/runner";
 
 interface UseProgramRunnerResult extends RunState {
   readonly run: () => void;
@@ -14,7 +15,7 @@ interface UseProgramRunnerResult extends RunState {
 export function useProgramRunner(
   workspaceRef: RefObject<Blockly.WorkspaceSvg | null>,
 ): UseProgramRunnerResult {
-  const state = useSyncExternalStore(subscribeToRun, getRunState);
+  const state = useStore(runStore);
 
   const run = useCallback(() => {
     const workspace = workspaceRef.current;
