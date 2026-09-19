@@ -2,12 +2,11 @@ import type * as Blockly from "blockly/core";
 import { BlockNumberIcon } from "@/blockly/BlockNumberIcon";
 
 /**
- * Numbers every block so one can be named out loud.
+ * Numbers every block so one can be named out loud — the floor AGENTS.md asks
+ * for, when the implicit target is wrong and a type name is ambiguous.
  *
- * AGENTS.md calls this the floor: when the implicit target is wrong and a type
- * name is ambiguous, a number still lands. Order follows workspace order, which
- * is also the order the agent is told about, so the screen and the agent never
- * disagree.
+ * Workspace order, which is the order the agent is told about, so the badge and
+ * the agent can never disagree.
  */
 export function numberBlocks(workspace: Blockly.Workspace): void {
   workspace.getAllBlocks(true).forEach((block, index) => {

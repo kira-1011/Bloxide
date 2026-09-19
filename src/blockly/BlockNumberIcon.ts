@@ -3,11 +3,9 @@ import * as Blockly from "blockly/core";
 const SIZE = 18;
 
 /**
- * The number a block is referred to by, drawn on the block itself.
- *
- * An Icon rather than an SVG layer of our own: Blockly positions it, moves it
- * with the block, and disposes it with the block, so nothing has to be kept in
- * sync through drags, zoom or scroll.
+ * A block's number, as an Icon rather than an overlay of our own: Blockly
+ * positions it, carries it through drags and zoom, and disposes it with the
+ * block, so there is nothing to keep in sync.
  */
 export class BlockNumberIcon extends Blockly.icons.Icon {
   static readonly TYPE = new Blockly.icons.IconType<BlockNumberIcon>("bloxide_number");
