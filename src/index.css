@@ -6,13 +6,16 @@ body,
   height: 100%;
 }
 
+/* A ring and full opacity keep the badge from reading as block content —
+   beside a number block's value it otherwise looks like another digit. */
 .bloxideNumberBadge {
   fill: #0f172a;
-  fill-opacity: 0.75;
+  stroke: #ffffff;
+  stroke-width: 1.5;
 }
 
 .bloxideNumberText {
   fill: #ffffff;
-  font-size: 11px;
+  font-size: 9px;
   font-weight: 700;
 }

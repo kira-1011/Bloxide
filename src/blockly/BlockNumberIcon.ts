@@ -1,6 +1,9 @@
 import * as Blockly from "blockly/core";
 
-const SIZE = 18;
+const BADGE = 14;
+// Reported larger than the badge so the renderer leaves a gap: on a number
+// block the badge sits right beside the value and reads as another digit.
+const SIZE = 20;
 
 /**
  * A block's number, as an Icon rather than an overlay of our own: Blockly
@@ -18,7 +21,7 @@ export class BlockNumberIcon extends Blockly.icons.Icon {
   }
 
   override getSize(): Blockly.utils.Size {
-    return new Blockly.utils.Size(SIZE, SIZE);
+    return new Blockly.utils.Size(SIZE, BADGE);
   }
 
   /** Before the mutator and warning icons, so numbers line up down the stack. */
@@ -33,15 +36,15 @@ export class BlockNumberIcon extends Blockly.icons.Icon {
 
     Blockly.utils.dom.createSvgElement(
       Blockly.utils.Svg.CIRCLE,
-      { class: "bloxideNumberBadge", r: SIZE / 2, cx: SIZE / 2, cy: SIZE / 2 },
+      { class: "bloxideNumberBadge", r: BADGE / 2, cx: BADGE / 2, cy: BADGE / 2 },
       this.svgRoot,
     );
     this.label = Blockly.utils.dom.createSvgElement(
       Blockly.utils.Svg.TEXT,
       {
         class: "bloxideNumberText",
-        x: SIZE / 2,
-        y: SIZE / 2,
+        x: BADGE / 2,
+        y: BADGE / 2,
         "text-anchor": "middle",
         "dominant-baseline": "central",
       },

@@ -1,6 +1,7 @@
 import * as Blockly from "blockly/core";
 import "blockly/blocks";
 import { beforeEach, describe, expect, it } from "vitest";
+import { BlockNumberIcon } from "@/blockly/BlockNumberIcon";
 import { findBlockByNumber, getBlockNumber, numberBlocks } from "@/blockly/blockNumbers";
 import { initBlocklyLocale } from "@/blockly/locale";
 
@@ -80,5 +81,16 @@ describe("findBlockByNumber", () => {
 
     expect(findBlockByNumber(workspace, 7)).toBeNull();
     expect(findBlockByNumber(workspace, 0)).toBeNull();
+  });
+});
+
+describe("the badge", () => {
+  it("claims more width than it draws, so a value cannot sit against it", () => {
+    const block = workspace.newBlock("math_number");
+    const icon = new BlockNumberIcon(block);
+
+    // On a number block the badge would otherwise read as a leading digit.
+    const size = icon.getSize();
+    expect(size.width).toBeGreaterThan(size.height);
   });
 });
