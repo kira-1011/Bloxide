@@ -2,6 +2,7 @@ import * as Blockly from "blockly/core";
 import "blockly/blocks";
 import { useEffect, useEffectEvent, useRef, type RefObject } from "react";
 import { setActiveWorkspace } from "@/blockly/activeWorkspace";
+import { numberBlocks } from "@/blockly/blockNumbers";
 import { initBlocklyLocale } from "@/blockly/locale";
 import { loadWorkspace, saveWorkspace } from "@/blockly/storage";
 
@@ -46,9 +47,11 @@ export function useBlocklyWorkspace({
 
     // Restore before listening, or the load is heard as a change.
     loadWorkspace(workspace);
+    numberBlocks(workspace);
 
     const listener = (event: Blockly.Events.Abstract) => {
       if (event.isUiEvent) return;
+      numberBlocks(workspace);
       saveWorkspace(workspace);
       handleChange(workspace);
     };

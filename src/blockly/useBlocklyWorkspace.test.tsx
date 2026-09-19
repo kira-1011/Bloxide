@@ -22,6 +22,12 @@ vi.mock(import("blockly/core"), () => ({
   svgResize: (...args: unknown[]) => svgResize(...args),
 }));
 vi.mock(import("blockly/blocks"), () => ({}));
+// Mocked like locale and storage: the icon subclass needs a real Blockly.
+vi.mock(import("@/blockly/blockNumbers"), () => ({
+  numberBlocks: vi.fn(),
+  findBlockByNumber: vi.fn(),
+  getBlockNumber: vi.fn(),
+}));
 vi.mock(import("@/blockly/locale"), () => ({
   initBlocklyLocale: () => initBlocklyLocale(),
 }));
