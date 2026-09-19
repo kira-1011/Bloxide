@@ -78,12 +78,14 @@ dead-ending.
 
 ## Feedback
 
-Every action produces three things at once:
+Every action produces two things at once:
 
 - **Visual** — the block appears and is briefly highlighted.
 - **Spoken** — a short confirmation ("move block added, ten steps"). Not a
   paragraph.
-- **State** — `readProgram` speaks the whole script aloud on request.
+
+The agent also reads the program through `bindState`, so it answers from what
+is actually on the workspace rather than from what it believes it did.
 
 ## Conventions
 

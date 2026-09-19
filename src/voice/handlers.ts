@@ -29,6 +29,9 @@ export async function addBlock({ type }: { type: string }): Promise<string> {
   if (block instanceof BlockSvg) {
     block.initSvg();
     block.render();
+    // Blockly's own selection is the highlight AGENTS.md asks for, and it
+    // shows which block the next utterance will act on.
+    block.select();
   }
   rememberBlock(block);
 

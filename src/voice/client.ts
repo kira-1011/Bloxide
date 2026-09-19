@@ -1,4 +1,5 @@
 import { VoxideClient } from "@voxide/react";
+import { describeProgram } from "@/blockly/programState";
 import { VOICE_ACTIONS } from "@/voice/handlers";
 
 const publicKey = import.meta.env.VITE_VOXIDE_PUBLIC_KEY;
@@ -9,5 +10,9 @@ const publicKey = import.meta.env.VITE_VOXIDE_PUBLIC_KEY;
  * account.
  */
 export const voice: VoxideClient | null = publicKey
-  ? new VoxideClient({ publicKey }).register(VOICE_ACTIONS)
+  ? new VoxideClient({ publicKey })
+      .register(VOICE_ACTIONS)
+      // Read before every utterance, so the agent answers from the workspace
+      // rather than from what it believes it did.
+      .bindState(() => describeProgram())
   : null;
