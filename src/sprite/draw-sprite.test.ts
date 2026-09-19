@@ -81,6 +81,18 @@ describe("drawSprite", () => {
     expect(ctx.argsOf("arc").length).toBeGreaterThan(0);
   });
 
+  it("falls back to a shape when the art failed to load", () => {
+    // A failed image reports complete as well as a loaded one, and drawing it
+    // throws — which would take the fallback down with it.
+    const ctx = recordingContext();
+    const broken = { width: 0, height: 0 } as unknown as CanvasImageSource;
+
+    drawSprite(ctx, DEFAULT_SPRITE, broken);
+
+    expect(ctx.argsOf("drawImage")).toHaveLength(0);
+    expect(ctx.argsOf("arc").length).toBeGreaterThan(0);
+  });
+
   it("still draws a hidden sprite, faintly and outlined", () => {
     const ctx = recordingContext();
 

@@ -56,13 +56,18 @@ export function drawSprite(
   ctx.rotate(orientation(sprite.direction));
   const scale = sprite.size / 100;
 
-  if (image) {
+  // A failed image reports complete as well as a loaded one, and drawing one
+  // that never arrived throws — which would take the fallback down with it.
+  const natural = image ? imageSize(image) : null;
+  const usable = image && natural && natural.width > 0 && natural.height > 0;
+
+  if (usable) {
     const height = BASE_HEIGHT * scale;
-    const width = height * aspectRatio(image);
+    const width = height * (natural.width / natural.height);
     ctx.drawImage(image, -width / 2, -height / 2, width, height);
   } else {
-    // The art loads over the network; a shape keeps the stage from reading as
-    // broken in the meantime.
+    // The art loads over the network, and may never arrive; a shape keeps the
+    // stage from reading as broken either way.
     ctx.fillStyle = "#94a3b8";
     ctx.beginPath();
     ctx.arc(0, 0, (BASE_HEIGHT / 2) * scale, 0, Math.PI * 2);
@@ -86,11 +91,6 @@ export function drawSprite(
   if (sprite.saying) drawBubble(ctx, sprite.saying);
 
   ctx.restore();
-}
-
-function aspectRatio(image: CanvasImageSource): number {
-  const { width, height } = imageSize(image);
-  return height === 0 ? 1 : width / height;
 }
 
 function imageSize(image: CanvasImageSource): { width: number; height: number } {

@@ -30,7 +30,9 @@ export function SpriteStage() {
     context.setTransform(ratio, 0, 0, ratio, 0, 0);
 
     const paint = () => {
-      drawSprite(context, sprite, costume?.complete ? costume : null);
+      // drawSprite decides whether the art is usable; an image that failed to
+      // load reports complete too.
+      drawSprite(context, sprite, costume);
     };
 
     paint();
