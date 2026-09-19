@@ -21,7 +21,7 @@ function numberOf(block: Blockly.Block): number {
 
 describe("findBlockByNumber", () => {
   it("finds the block wearing a number", () => {
-    workspace.newBlock("controls_repeat_ext");
+    workspace.newBlock("controls_repeat");
     const print = workspace.newBlock("text_print");
     numberBlocks(workspace);
 

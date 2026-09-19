@@ -30,7 +30,7 @@ describe("describeProgram", () => {
   });
 
   it("counts every block but sends one entry per stack", () => {
-    workspace.newBlock("controls_repeat_ext");
+    workspace.newBlock("controls_repeat");
     workspace.newBlock("text_print");
 
     const { blockCount, stacks } = describeProgram();
@@ -41,7 +41,7 @@ describe("describeProgram", () => {
   });
 
   it("keeps nesting, because that is what the agent has to reason about", () => {
-    const loop = workspace.newBlock("controls_repeat_ext");
+    const loop = workspace.newBlock("controls_repeat");
     const print = workspace.newBlock("text_print");
     const input = loop.getInput("DO")?.connection;
     if (!input || !print.previousConnection) throw new Error("block shape changed");
@@ -50,7 +50,7 @@ describe("describeProgram", () => {
     const { stacks } = describeProgram();
 
     expect(stacks).toHaveLength(1);
-    expect(stacks[0]?.type).toBe("controls_repeat_ext");
+    expect(stacks[0]?.type).toBe("controls_repeat");
     expect(stacks[0]?.inputs?.["DO"]?.block?.type).toBe("text_print");
   });
 

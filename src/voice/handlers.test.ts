@@ -9,6 +9,7 @@ import {
   attachBlock,
   deleteBlock,
   haltProgram,
+  setParam,
   startProgram,
   VOICE_ACTIONS,
 } from "@/voice/handlers";
@@ -32,14 +33,14 @@ describe("addBlock", () => {
   it("offers the model the toolbox types to choose from", () => {
     // Without the enum the model passes the child's word — "repeat" — through.
     expect(VOICE_ACTIONS.addBlock?.params?.type?.enum).toEqual([...BLOCK_TYPES]);
-    expect(BLOCK_TYPES).toContain("controls_repeat_ext");
+    expect(BLOCK_TYPES).toContain("controls_repeat");
   });
 
   it("adds the block the agent asked for", async () => {
-    const spoken = await addBlock({ type: "controls_repeat_ext" });
+    const spoken = await addBlock({ type: "controls_repeat" });
 
     expect(workspace.getAllBlocks(false)).toHaveLength(1);
-    expect(workspace.getAllBlocks(false)[0]?.type).toBe("controls_repeat_ext");
+    expect(workspace.getAllBlocks(false)[0]?.type).toBe("controls_repeat");
     expect(spoken).toContain("Added");
   });
 
@@ -57,7 +58,7 @@ describe("addBlock", () => {
     // still arrives sometimes and must not dead-end.
     await addBlock({ type: "repeat" });
 
-    expect(workspace.getAllBlocks(false)[0]?.type).toBe("controls_repeat_ext");
+    expect(workspace.getAllBlocks(false)[0]?.type).toBe("controls_repeat");
   });
 
   it('ignores casing and a trailing "block"', async () => {
@@ -82,13 +83,13 @@ describe("addBlock", () => {
 
 describe("attachBlock", () => {
   it("puts a statement block inside a loop", async () => {
-    await addBlock({ type: "controls_repeat_ext" });
+    await addBlock({ type: "controls_repeat" });
     await addBlock({ type: "text_print" });
 
     // No type given: the print block was just added, so it is the target.
     const spoken = await attachBlock({ to: "repeat" });
 
-    const loop = workspace.getBlocksByType("controls_repeat_ext", false)[0];
+    const loop = workspace.getBlocksByType("controls_repeat", false)[0];
     expect(loop?.getChildren(false).map((child) => child.type)).toContain("text_print");
     expect(spoken).toContain("inside");
   });
@@ -114,8 +115,8 @@ describe("attachBlock", () => {
 
   it("nests one block inside another of the same type", async () => {
     // The target must not resolve to the very block being moved.
-    await addBlock({ type: "controls_repeat_ext" });
-    await addBlock({ type: "controls_repeat_ext" });
+    await addBlock({ type: "controls_repeat" });
+    await addBlock({ type: "controls_repeat" });
 
     const spoken = await attachBlock({ to: "repeat" });
 
@@ -124,7 +125,7 @@ describe("attachBlock", () => {
   });
 
   it("refuses to attach a block to itself", async () => {
-    await addBlock({ type: "controls_repeat_ext" });
+    await addBlock({ type: "controls_repeat" });
 
     const spoken = await attachBlock({ to: "repeat" });
 
@@ -134,16 +135,16 @@ describe("attachBlock", () => {
 
 describe("deleteBlock", () => {
   it("deletes the block just added when no type is given", async () => {
-    await addBlock({ type: "controls_repeat_ext" });
+    await addBlock({ type: "controls_repeat" });
 
     const spoken = deleteBlock({});
 
     expect(workspace.getAllBlocks(false)).toHaveLength(0);
-    expect(spoken).toContain("controls_repeat_ext");
+    expect(spoken).toContain("controls_repeat");
   });
 
   it("deletes a named block", async () => {
-    await addBlock({ type: "controls_repeat_ext" });
+    await addBlock({ type: "controls_repeat" });
     await addBlock({ type: "text_print" });
 
     deleteBlock({ type: "repeat" });
@@ -180,20 +181,20 @@ describe("run and stop", () => {
 
 describe("referring by number", () => {
   it("deletes the block wearing the number, not the last one touched", async () => {
-    await addBlock({ type: "controls_repeat_ext" });
+    await addBlock({ type: "controls_repeat" });
     await addBlock({ type: "text_print" });
     numberBlocks(workspace);
-    const loop = workspace.getBlocksByType("controls_repeat_ext", false)[0];
+    const loop = workspace.getBlocksByType("controls_repeat", false)[0];
     const number = getBlockNumber(loop!) ?? 0;
 
     const spoken = deleteBlock({ number });
 
-    expect(spoken).toContain("controls_repeat_ext");
+    expect(spoken).toContain("controls_repeat");
     expect(workspace.getAllBlocks(false).map((block) => block.type)).toEqual(["text_print"]);
   });
 
   it("beats a type name when both are given", async () => {
-    await addBlock({ type: "controls_repeat_ext" });
+    await addBlock({ type: "controls_repeat" });
     await addBlock({ type: "text_print" });
     numberBlocks(workspace);
     const print = workspace.getBlocksByType("text_print", false)[0];
@@ -212,10 +213,10 @@ describe("referring by number", () => {
   });
 
   it("attaches by number, including two blocks of the same type", async () => {
-    await addBlock({ type: "controls_repeat_ext" });
-    await addBlock({ type: "controls_repeat_ext" });
+    await addBlock({ type: "controls_repeat" });
+    await addBlock({ type: "controls_repeat" });
     numberBlocks(workspace);
-    const loops = workspace.getBlocksByType("controls_repeat_ext", true);
+    const loops = workspace.getBlocksByType("controls_repeat", true);
     const [outer, inner] = [loops[0], loops[1]];
 
     const spoken = await attachBlock({
@@ -230,14 +231,14 @@ describe("referring by number", () => {
 
 describe("numbers stay usable without waiting for Blockly's events", () => {
   it("numbers a new block before the handler returns", async () => {
-    await addBlock({ type: "controls_repeat_ext" });
+    await addBlock({ type: "controls_repeat" });
 
     // Blockly queues its create event; a spoken number must work right away.
     expect(workspace.getAllBlocks(true).map(getBlockNumber)).toEqual([1]);
   });
 
   it("renumbers after an attach, so a badge is never stale", async () => {
-    await addBlock({ type: "controls_repeat_ext" });
+    await addBlock({ type: "controls_repeat" });
     await addBlock({ type: "text_print" });
     await attachBlock({ to: "repeat" });
 
@@ -246,7 +247,7 @@ describe("numbers stay usable without waiting for Blockly's events", () => {
   });
 
   it("closes the gap after a delete before returning", async () => {
-    await addBlock({ type: "controls_repeat_ext" });
+    await addBlock({ type: "controls_repeat" });
     await addBlock({ type: "text_print" });
     await addBlock({ type: "controls_if" });
 
@@ -256,7 +257,7 @@ describe("numbers stay usable without waiting for Blockly's events", () => {
   });
 
   it("finds a block by the badge it wears, not by its position", async () => {
-    await addBlock({ type: "controls_repeat_ext" });
+    await addBlock({ type: "controls_repeat" });
     await addBlock({ type: "text_print" });
     const print = workspace.getBlocksByType("text_print", false)[0];
     const badge = getBlockNumber(print!) ?? 0;
@@ -264,5 +265,51 @@ describe("numbers stay usable without waiting for Blockly's events", () => {
     const spoken = deleteBlock({ number: badge });
 
     expect(spoken).toContain("text_print");
+  });
+});
+
+describe("setParam", () => {
+  it("changes the block just touched when none is named", async () => {
+    await addBlock({ type: "controls_repeat" });
+
+    const spoken = await setParam({ value: "4" });
+
+    expect(workspace.getBlocksByType("controls_repeat", false)[0]?.getFieldValue("TIMES")).toBe(4);
+    expect(spoken).toContain("4");
+  });
+
+  it("changes the block wearing a number", async () => {
+    await addBlock({ type: "controls_repeat" });
+    await addBlock({ type: "text" });
+    numberBlocks(workspace);
+    const loop = workspace.getBlocksByType("controls_repeat", false)[0];
+
+    await setParam({ number: getBlockNumber(loop!) ?? 0, value: "7" });
+
+    expect(loop?.getFieldValue("TIMES")).toBe(7);
+  });
+
+  it("changes the block named by type", async () => {
+    await addBlock({ type: "controls_repeat" });
+    await addBlock({ type: "text" });
+
+    await setParam({ type: "words", value: "hello" });
+
+    expect(workspace.getBlocksByType("text", false)[0]?.getFieldValue("TEXT")).toBe("hello");
+  });
+
+  it("says so when no block wears that number", async () => {
+    await addBlock({ type: "controls_repeat" });
+
+    expect(await setParam({ number: 9, value: "4" })).toBe("There is no block 9.");
+  });
+
+  it("leaves the block alone when the value does not fit it", async () => {
+    await addBlock({ type: "controls_repeat" });
+
+    const spoken = await setParam({ value: "lots" });
+
+    expect(spoken).toContain("not a number");
+    expect(workspace.getBlocksByType("controls_repeat", false)[0]?.getFieldValue("TIMES")).toBe(10);
   });
 });

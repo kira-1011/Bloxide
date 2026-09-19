@@ -60,10 +60,8 @@ describe("runProgram", () => {
 
   it("stops a loop partway through", async () => {
     const workspace = workspaceWith((ws) => {
-      const loop = ws.newBlock("controls_repeat_ext");
-      const times = ws.newBlock("math_number");
-      times.setFieldValue("1000", "NUM");
-      connect(loop.getInput("TIMES")?.connection, times.outputConnection);
+      const loop = ws.newBlock("controls_repeat");
+      loop.setFieldValue("1000", "TIMES");
       const print = printBlock(ws, "tick");
       connect(loop.getInput("DO")?.connection, print.previousConnection);
     });
@@ -82,10 +80,8 @@ describe("runProgram", () => {
 
   it("reports that a program is running while it runs", async () => {
     const workspace = workspaceWith((ws) => {
-      const loop = ws.newBlock("controls_repeat_ext");
-      const times = ws.newBlock("math_number");
-      times.setFieldValue("50", "NUM");
-      connect(loop.getInput("TIMES")?.connection, times.outputConnection);
+      const loop = ws.newBlock("controls_repeat");
+      loop.setFieldValue("50", "TIMES");
       const print = printBlock(ws, "tick");
       connect(loop.getInput("DO")?.connection, print.previousConnection);
     });
@@ -108,10 +104,8 @@ describe("runProgram", () => {
 
   it("does not let a replaced run write into the new one", async () => {
     const workspace = workspaceWith((ws) => {
-      const loop = ws.newBlock("controls_repeat_ext");
-      const times = ws.newBlock("math_number");
-      times.setFieldValue("1000", "NUM");
-      connect(loop.getInput("TIMES")?.connection, times.outputConnection);
+      const loop = ws.newBlock("controls_repeat");
+      loop.setFieldValue("1000", "TIMES");
       const print = printBlock(ws, "old");
       connect(loop.getInput("DO")?.connection, print.previousConnection);
     });

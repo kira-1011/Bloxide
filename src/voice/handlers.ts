@@ -1,6 +1,7 @@
 import type { VoxideActionConfig } from "@voxide/react";
 import { defineAction } from "@/voice/defineAction";
 import { getActiveWorkspace } from "@/blockly/activeWorkspace";
+import { setFieldValue } from "@/blockly/block-fields";
 import { numberBlocks } from "@/blockly/blockView";
 import { revealBlock } from "@/blockly/blockView";
 import { forgetBlock, rememberBlock, resolveBlock } from "@/blockly/blockReference";
@@ -128,6 +129,37 @@ export async function attachBlock({
   return `A ${child.type} block does not fit there.`;
 }
 
+/**
+ * Changes the value written on a block: how many times a loop repeats, what a
+ * piece of text says, which comparison is made.
+ */
+export async function setParam({
+  type,
+  number,
+  value,
+}: {
+  type?: string;
+  number?: number;
+  value: string;
+}): Promise<string> {
+  const workspace = getActiveWorkspace();
+
+  const block = resolveBlock(workspace, type, number !== undefined ? { number } : {});
+  if (!block) return describeMiss(type, number);
+
+  const change = setFieldValue(block, value);
+  if (!change.ok) return change.spoken;
+
+  const { BlockSvg } = await import("blockly/core");
+  if (block instanceof BlockSvg) {
+    block.select();
+    revealBlock(workspace, block);
+  }
+  rememberBlock(block);
+
+  return change.spoken;
+}
+
 export function deleteBlock({ type, number }: { type?: string; number?: number }): string {
   const workspace = getActiveWorkspace();
 
@@ -173,7 +205,7 @@ export const VOICE_ACTIONS = {
         type: "string",
         required: true,
         // Without the enum the model passes the spoken word through —
-        // "repeat" rather than controls_repeat_ext — and nothing matches.
+        // "repeat" rather than controls_repeat — and nothing matches.
         enum: [...BLOCK_TYPES],
         description: "The Blockly type id of the block to add",
       },
@@ -225,6 +257,30 @@ export const VOICE_ACTIONS = {
       },
     },
     handler: (args) => deleteBlock(args),
+  }),
+
+  setParam: defineAction({
+    description:
+      "Change the value on a block: how many times a loop repeats, what a piece " +
+      "of text says, or which comparison is made. Blocks show a number on " +
+      "screen; prefer those. Omit the block to change the one just touched.",
+    params: {
+      number: {
+        type: "number",
+        description: "The number shown on the block to change. Most precise.",
+      },
+      type: {
+        type: "string",
+        enum: [...BLOCK_TYPES],
+        description: "The block to change, by type",
+      },
+      value: {
+        type: "string",
+        required: true,
+        description: "The new value: digits for a number, or the words for a comparison",
+      },
+    },
+    handler: (args) => setParam(args),
   }),
 
   runProgram: defineAction({
