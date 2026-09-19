@@ -21,14 +21,14 @@ afterEach(() => {
 describe("workspace storage", () => {
   it("round-trips a program through localStorage", () => {
     const source = makeWorkspace();
-    source.newBlock("controls_repeat_ext");
+    source.newBlock("controls_repeat");
 
     saveWorkspace(source);
     const restored = makeWorkspace();
     loadWorkspace(restored);
 
     expect(restored.getAllBlocks(false)).toHaveLength(1);
-    expect(restored.getAllBlocks(false)[0]?.type).toBe("controls_repeat_ext");
+    expect(restored.getAllBlocks(false)[0]?.type).toBe("controls_repeat");
   });
 
   it("leaves the workspace alone when nothing is stored", () => {

@@ -15,7 +15,7 @@ beforeEach(() => {
 
 describe("numberBlocks", () => {
   it("numbers from one, in workspace order", () => {
-    workspace.newBlock("controls_repeat_ext");
+    workspace.newBlock("controls_repeat");
     workspace.newBlock("text_print");
 
     numberBlocks(workspace);
@@ -24,7 +24,7 @@ describe("numberBlocks", () => {
   });
 
   it("numbers nested blocks too, so anything on screen can be named", () => {
-    const loop = workspace.newBlock("controls_repeat_ext");
+    const loop = workspace.newBlock("controls_repeat");
     const print = workspace.newBlock("text_print");
     const input = loop.getInput("DO")?.connection;
     if (!input || !print.previousConnection) throw new Error("block shape changed");
@@ -40,7 +40,7 @@ describe("numberBlocks", () => {
     const first = workspace.newBlock("text_print");
     numberBlocks(workspace);
 
-    const second = workspace.newBlock("controls_repeat_ext");
+    const second = workspace.newBlock("controls_repeat");
     numberBlocks(workspace);
     numberBlocks(workspace);
 
@@ -49,7 +49,7 @@ describe("numberBlocks", () => {
   });
 
   it("closes the gap when a block is deleted", () => {
-    const first = workspace.newBlock("controls_repeat_ext");
+    const first = workspace.newBlock("controls_repeat");
     const second = workspace.newBlock("text_print");
     const third = workspace.newBlock("controls_if");
     numberBlocks(workspace);

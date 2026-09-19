@@ -30,7 +30,7 @@ const CATEGORIES = [
     kind: "category",
     name: "Loops",
     categorystyle: "loop_category",
-    contents: [{ kind: "block", type: "controls_repeat_ext", say: ["repeat", "loop"] }],
+    contents: [{ kind: "block", type: "controls_repeat", say: ["repeat", "loop"] }],
   },
   {
     kind: "category",
