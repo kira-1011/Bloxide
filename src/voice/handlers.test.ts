@@ -2,7 +2,7 @@ import * as Blockly from "blockly/core";
 import "blockly/blocks";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { setActiveWorkspace } from "@/blockly/activeWorkspace";
-import { getBlockNumber, numberBlocks } from "@/blockly/blockNumbers";
+import { getBlockNumber, numberBlocks } from "@/blockly/blockView";
 import { initBlocklyLocale } from "@/blockly/locale";
 import {
   addBlock,

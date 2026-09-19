@@ -1,8 +1,20 @@
 import type * as Blockly from "blockly/core";
-import { findBlockByNumber } from "@/blockly/blockNumbers";
+import { getBlockNumber } from "@/blockly/blockView";
 import { resolveBlockType } from "@/blockly/toolbox";
 
 let lastBlockId: string | null = null;
+
+/**
+ * Finds the block wearing a badge — by the badge, not by position: Blockly
+ * queues its events, so between a change and the next renumber the order can
+ * differ from what is on screen. What the speaker can see has to win.
+ */
+export function findBlockByNumber(
+  workspace: Blockly.Workspace,
+  number: number,
+): Blockly.Block | null {
+  return workspace.getAllBlocks(true).find((block) => getBlockNumber(block) === number) ?? null;
+}
 
 /**
  * The implicit target: the block just created. AGENTS.md makes this the

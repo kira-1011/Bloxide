@@ -1,8 +1,8 @@
 import * as Blockly from "blockly/core";
 import "blockly/blocks";
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { BlockNumberIcon } from "@/blockly/BlockNumberIcon";
-import { findBlockByNumber, getBlockNumber, numberBlocks } from "@/blockly/blockNumbers";
+import { getBlockNumber, numberBlocks, revealBlock } from "@/blockly/blockView";
 import { initBlocklyLocale } from "@/blockly/locale";
 
 initBlocklyLocale();
@@ -84,26 +84,6 @@ describe("badges on value blocks", () => {
   });
 });
 
-describe("findBlockByNumber", () => {
-  it("finds the block wearing a number", () => {
-    workspace.newBlock("controls_repeat_ext");
-    const print = workspace.newBlock("text_print");
-    numberBlocks(workspace);
-
-    const found = findBlockByNumber(workspace, getBlockNumber(print) ?? 0);
-
-    expect(found?.id).toBe(print.id);
-  });
-
-  it("returns nothing for a number no block wears", () => {
-    workspace.newBlock("text_print");
-    numberBlocks(workspace);
-
-    expect(findBlockByNumber(workspace, 7)).toBeNull();
-    expect(findBlockByNumber(workspace, 0)).toBeNull();
-  });
-});
-
 describe("the badge", () => {
   it("claims more width than it draws, so a value cannot sit against it", () => {
     const block = workspace.newBlock("math_number");
@@ -112,5 +92,56 @@ describe("the badge", () => {
     // On a number block the badge would otherwise read as a leading digit.
     const size = icon.getSize();
     expect(size.width).toBeGreaterThan(size.height);
+  });
+});
+
+const VIEW = { left: 0, top: 0, width: 800, height: 600 };
+
+function workspaceWatching(centerOnBlock: (id: string) => void) {
+  return {
+    getMetricsManager: () => ({ getViewMetrics: () => VIEW }),
+    centerOnBlock,
+  } as unknown as Blockly.WorkspaceSvg;
+}
+
+function blockAt(left: number, top: number) {
+  return {
+    id: "block",
+    getBoundingRectangle: () => ({ left, top, right: left + 100, bottom: top + 40 }),
+  } as unknown as Blockly.BlockSvg;
+}
+
+describe("revealBlock", () => {
+  it("centres a block that sits above the viewport", () => {
+    const centre = vi.fn();
+
+    revealBlock(workspaceWatching(centre), blockAt(0, -900));
+
+    expect(centre).toHaveBeenCalledWith("block");
+  });
+
+  it("centres a block that sits below the viewport", () => {
+    const centre = vi.fn();
+
+    revealBlock(workspaceWatching(centre), blockAt(0, 900));
+
+    expect(centre).toHaveBeenCalledWith("block");
+  });
+
+  it("leaves the workspace alone when the block is already in view", () => {
+    const centre = vi.fn();
+
+    revealBlock(workspaceWatching(centre), blockAt(100, 100));
+
+    // Recentring here would move the workspace under someone reading it.
+    expect(centre).not.toHaveBeenCalled();
+  });
+
+  it("counts a block straddling the edge as visible", () => {
+    const centre = vi.fn();
+
+    revealBlock(workspaceWatching(centre), blockAt(-50, 580));
+
+    expect(centre).not.toHaveBeenCalled();
   });
 });

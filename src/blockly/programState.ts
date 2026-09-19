@@ -1,6 +1,6 @@
 import * as Blockly from "blockly/core";
 import { getActiveWorkspace, hasActiveWorkspace } from "@/blockly/activeWorkspace";
-import { getBlockNumber } from "@/blockly/blockNumbers";
+import { getBlockNumber } from "@/blockly/blockView";
 import { isProgramRunning } from "@/run/runner";
 
 export interface ProgramSnapshot {
