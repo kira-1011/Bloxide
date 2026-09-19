@@ -50,9 +50,14 @@ export async function attachBlock({ type, to }: { type?: string; to: string }): 
   if (!child)
     return type ? `I cannot find a ${type} block.` : "I am not sure which block you mean.";
 
-  const parent = resolveBlock(workspace, to);
-  if (!parent) return `I cannot find a ${to} block.`;
-  if (child.id === parent.id) return "A block cannot be attached to itself.";
+  // Excluded, or "put the repeat inside the other repeat" resolves to the very
+  // block being moved and nesting two of a kind becomes impossible.
+  const parent = resolveBlock(workspace, to, { exclude: child.id });
+  if (!parent) {
+    return resolveBlock(workspace, to)?.id === child.id
+      ? "A block cannot be attached to itself."
+      : `I cannot find a ${to} block.`;
+  }
 
   const { ConnectionType } = await import("blockly/core");
 

@@ -72,11 +72,15 @@ export async function runProgram(workspace: Blockly.Workspace): Promise<void> {
   javascriptGenerator.INFINITE_LOOP_TRAP = "await __tick();\n";
   const code = javascriptGenerator.workspaceToCode(workspace);
 
+  // Checked on both sides of the yield: a second run can start, and replace
+  // currentRun, while this one is parked on the timer.
   const tick = async (): Promise<void> => {
     if (run.cancelled) throw new ProgramStopped();
     await new Promise((resolve) => setTimeout(resolve, 0));
+    if (run.cancelled) throw new ProgramStopped();
   };
   const print = (value: unknown): void => {
+    if (currentRun !== run) return;
     setState({ output: [...state.output, { id: state.output.length, text: String(value) }] });
   };
 
@@ -88,7 +92,7 @@ export async function runProgram(workspace: Blockly.Workspace): Promise<void> {
 
     await program(tick, print);
   } catch (error) {
-    if (!(error instanceof ProgramStopped)) {
+    if (!(error instanceof ProgramStopped) && currentRun === run) {
       setState({ error: error instanceof Error ? error.message : String(error) });
     }
   } finally {

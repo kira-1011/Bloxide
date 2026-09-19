@@ -3,6 +3,40 @@
 Progress on Bloxide, newest first. Written for anyone following the build, not
 just developers — see the Changelog section of AGENTS.md.
 
+## 2026-09-19
+
+Voice works. The editor can be driven by speaking to it.
+
+### Added
+
+- **Speak to build.** Ask for a block and it appears. Ask for it to go inside
+  another and it snaps in. Ask for one to go and it does, with whatever sat
+  under it reconnecting. Ask to run the program, or to stop it mid-loop.
+- **"That one" means something.** Attaching and deleting act on the block just
+  added unless another is named, and the block the last sentence touched stays
+  highlighted, so it is clear what the next one will act on.
+- **Spoken words, not identifiers.** "Repeat", "loop", "print block" all reach
+  the right block. Nobody should have to say `controls_repeat_ext` out loud.
+- **The assistant can see the workspace.** It reads the real program before
+  each sentence, so it answers from what is there rather than from what it
+  thinks it did.
+
+### Why it is built this way
+
+- **Run and Stop mean one thing.** A program started by speaking shows the same
+  running state and output as one started by the button; the run does not
+  belong to whichever one asked for it.
+- **The assistant cannot invent blocks.** It chooses from the blocks the
+  toolbox offers, and anything else is refused before it reaches the workspace.
+- **Nothing is claimed that did not happen.** Every confirmation comes from
+  what the editor actually did.
+
+### Next
+
+- Saying which one when several look alike — "the second repeat", or by number.
+- Changing a value by voice.
+- The Bloxide block set: one stage, one sprite, about fifteen blocks.
+
 ## 2026-09-18
 
 Day one. The editor works end to end; nothing is voice-driven yet.

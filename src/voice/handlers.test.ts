@@ -111,6 +111,17 @@ describe("attachBlock", () => {
     expect(spoken).toContain("does not fit");
   });
 
+  it("nests one block inside another of the same type", async () => {
+    // The target must not resolve to the very block being moved.
+    await addBlock({ type: "controls_repeat_ext" });
+    await addBlock({ type: "controls_repeat_ext" });
+
+    const spoken = await attachBlock({ to: "repeat" });
+
+    expect(spoken).toContain("inside");
+    expect(workspace.getTopBlocks(false)).toHaveLength(1);
+  });
+
   it("refuses to attach a block to itself", async () => {
     await addBlock({ type: "controls_repeat_ext" });
 

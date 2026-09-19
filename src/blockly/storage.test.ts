@@ -48,6 +48,14 @@ describe("workspace storage", () => {
     expect(localStorage.getItem(STORAGE_KEY)).toBeNull();
   });
 
+  it("discards an array payload, which is an object but not a workspace", () => {
+    localStorage.setItem(STORAGE_KEY, "[]");
+    const workspace = makeWorkspace();
+
+    expect(() => loadWorkspace(workspace)).not.toThrow();
+    expect(localStorage.getItem(STORAGE_KEY)).toBeNull();
+  });
+
   it("keeps events disabled while loading, so a restore is not a change", () => {
     const source = makeWorkspace();
     source.newBlock("text_print");

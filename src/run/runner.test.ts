@@ -105,4 +105,25 @@ describe("runProgram", () => {
   it("ignores a stop when nothing is running", () => {
     expect(() => stopProgram()).not.toThrow();
   });
+
+  it("does not let a replaced run write into the new one", async () => {
+    const workspace = workspaceWith((ws) => {
+      const loop = ws.newBlock("controls_repeat_ext");
+      const times = ws.newBlock("math_number");
+      times.setFieldValue("1000", "NUM");
+      connect(loop.getInput("TIMES")?.connection, times.outputConnection);
+      const print = printBlock(ws, "old");
+      connect(loop.getInput("DO")?.connection, print.previousConnection);
+    });
+    const replacement = workspaceWith((ws) => printBlock(ws, "new"));
+
+    const first = runProgram(workspace);
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    await runProgram(replacement);
+    await first;
+
+    // The old run was parked on its timer when the new one started; anything
+    // it printed afterwards must not appear here.
+    expect(getRunState().output.map((line) => line.text)).toEqual(["new"]);
+  });
 });

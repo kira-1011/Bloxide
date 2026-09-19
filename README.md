@@ -46,8 +46,9 @@ game" it will not build one, because the point is that the child is the author.
 
 ## Status
 
-Early. A drag and drop Blockly workspace is up with a starter toolbox; the
-Bloxide blocks and the whole voice layer are still to come.
+Early, but the loop is closed: blocks can be added, nested, deleted, run and
+stopped by speaking. The Bloxide block set — a stage and a sprite — is still to
+come.
 
 ## Stack
 

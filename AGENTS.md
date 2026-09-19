@@ -100,11 +100,14 @@ dead-ending.
 
 ## Feedback
 
-Every action produces two things at once:
+Every action is felt two ways:
 
-- **Visual** — the block appears and is briefly highlighted.
+- **Visual** — the workspace shows the result: a block appears, moves, or is
+  gone. Where an action has a block as its subject, that block is left
+  selected, so it is clear what the next sentence will act on.
 - **Spoken** — a short confirmation ("move block added, ten steps"). Not a
-  paragraph.
+  paragraph. Every action says something, including the ones that change no
+  blocks.
 
 The agent also reads the program through `bindState`, so it answers from what
 is actually on the workspace rather than from what it believes it did.
@@ -170,7 +173,7 @@ before working in its area, not after.
   shape: generics, conditional or mapped types, template literals, narrowing
   helpers, or anything derived from another type. See Type safety below.
 
-All three are committed to the repo under `.agents/skills/`, so a clone has them
+All four are committed to the repo under `.agents/skills/`, so a clone has them
 without anyone installing anything. `skills-lock.json` pins the versions. The
 `.claude/skills/` symlinks are machine-local and gitignored — recreate them with
 `npx skills install` if your agent reads from there.

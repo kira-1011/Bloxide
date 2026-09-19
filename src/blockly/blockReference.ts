@@ -15,6 +15,11 @@ export function forgetBlock(block: Blockly.Block): void {
   if (lastBlockId === block.id) lastBlockId = null;
 }
 
+interface ResolveOptions {
+  /** Id to skip, so a block is never resolved as its own target. */
+  readonly exclude?: string;
+}
+
 /**
  * Resolves the reference: the implicit target when none was given,
  * otherwise the last block of the named type.
@@ -25,14 +30,16 @@ export function forgetBlock(block: Blockly.Block): void {
 export function resolveBlock(
   workspace: Blockly.Workspace,
   reference?: string,
+  { exclude }: ResolveOptions = {},
 ): Blockly.Block | null {
   if (!reference) {
-    return lastBlockId ? workspace.getBlockById(lastBlockId) : null;
+    if (!lastBlockId || lastBlockId === exclude) return null;
+    return workspace.getBlockById(lastBlockId);
   }
 
   const type = resolveBlockType(reference);
   if (!type) return null;
 
-  const matches = workspace.getBlocksByType(type, true);
+  const matches = workspace.getBlocksByType(type, true).filter((block) => block.id !== exclude);
   return matches.at(-1) ?? null;
 }

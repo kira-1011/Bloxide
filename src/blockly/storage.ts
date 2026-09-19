@@ -28,7 +28,10 @@ export function loadWorkspace(workspace: Blockly.Workspace): void {
   Blockly.Events.disable();
   try {
     const parsed: unknown = JSON.parse(data);
-    if (typeof parsed !== "object" || parsed === null) throw new Error("not a workspace");
+    // An array is an object too, and Blockly expects a keyed state.
+    if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
+      throw new Error("not a workspace");
+    }
 
     // v13 takes an options object here, not the codelab's positional boolean.
     Blockly.serialization.workspaces.load(parsed, workspace, { recordUndo: false });
