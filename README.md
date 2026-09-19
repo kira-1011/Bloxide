@@ -41,10 +41,11 @@ and the app says what it did in a sentence.
 
 Saying "that block" is meant to work three ways, in order: the block just
 created stays the target, so "make it ten steps" needs no reference at all;
-failing that, position ("the second repeat", "the last one"); and every block
-carries a number on screen as the fallback that keeps a misheard word from
-dead-ending. Only the first is built — naming a type currently picks the last
-block of that type.
+failing that, position ("the second repeat", "the last one"); and blocks carry
+a number on screen as the fallback that keeps a misheard word from dead-ending.
+The first and the third are built; position is not. A bare number or piece of
+text carries no badge — it is named by what it is, so nothing sits over the
+value while you type it.
 
 The agent only places blocks. It does not write programs. If you say "make me a
 game" it will not build one, because the point is that the child is the author.
