@@ -97,10 +97,17 @@ export async function attachBlock({
 
   const { ConnectionType } = await import("blockly/core");
 
+  // A shadow counts as open: it is a default, and Blockly puts it back if the
+  // block covering it is taken away again. Without this, giving blocks their
+  // slot defaults would be what stops a real block from ever going in one.
   const openInputs = (kind: ConnectionTypeValue) =>
     parent.inputList
       .map((input) => input.connection)
-      .filter((connection) => connection?.type === kind && !connection.targetConnection);
+      .filter(
+        (connection) =>
+          connection?.type === kind &&
+          (!connection.targetConnection || connection.targetBlock()?.isShadow() === true),
+      );
 
   type ConnectionTypeValue = (typeof ConnectionType)[keyof typeof ConnectionType];
 

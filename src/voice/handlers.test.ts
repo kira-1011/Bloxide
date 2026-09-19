@@ -147,6 +147,19 @@ describe("attachBlock", () => {
 
     expect(spoken).toBe("A block cannot be attached to itself.");
   });
+
+  it("puts a block over a slot default rather than refusing the slot", async () => {
+    // The shadow occupies the connection, so without allowing for it the
+    // defaults added here would be what blocks a real block from going in.
+    await addBlock({ type: "text_print" });
+    await addBlock({ type: "text" });
+
+    const spoken = await attachBlock({ to: "print" });
+
+    const print = workspace.getBlocksByType("text_print", false)[0];
+    expect(print?.getInputTargetBlock("TEXT")?.isShadow()).toBe(false);
+    expect(spoken).toContain("text_print");
+  });
 });
 
 describe("deleteBlock", () => {

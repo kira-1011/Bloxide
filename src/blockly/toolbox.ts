@@ -34,7 +34,15 @@ const CATEGORIES = [
     categorystyle: "logic_category",
     contents: [
       { kind: "block", type: "controls_if", say: ["if", "if then"] },
-      { kind: "block", type: "logic_compare", say: ["compare", "comparison", "equals"] },
+      {
+        kind: "block",
+        type: "logic_compare",
+        say: ["compare", "comparison", "equals"],
+        inputs: {
+          A: { shadow: { type: "math_number", fields: { NUM: 1 } } },
+          B: { shadow: { type: "math_number", fields: { NUM: 1 } } },
+        },
+      },
     ],
   },
   {
