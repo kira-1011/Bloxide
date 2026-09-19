@@ -1,5 +1,5 @@
 import type * as Blockly from "blockly/core";
-import { getBlockNumber } from "@/blockly/blockView";
+import { getBlockNumber } from "@/blockly/block-view";
 import { resolveBlockType } from "@/blockly/toolbox";
 
 let lastBlockId: string | null = null;

@@ -1,9 +1,9 @@
 import * as Blockly from "blockly/core";
 import "blockly/blocks";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { setActiveWorkspace } from "@/blockly/activeWorkspace";
+import { setActiveWorkspace } from "@/blockly/active-workspace";
 import { initBlocklyLocale } from "@/blockly/locale";
-import { describeProgram } from "@/blockly/programState";
+import { describeProgram } from "@/blockly/program-state";
 
 initBlocklyLocale();
 

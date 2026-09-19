@@ -2,7 +2,7 @@ import { render } from "@testing-library/react";
 import type * as Blockly from "blockly/core";
 import { useEffect } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { useBlocklyWorkspace } from "@/blockly/useBlocklyWorkspace";
+import { useBlocklyWorkspace } from "@/blockly/use-blockly-workspace";
 
 // jsdom has no SVG geometry, so Blockly is mocked: the adapter is the subject.
 const dispose = vi.fn();
@@ -23,7 +23,7 @@ vi.mock(import("blockly/core"), () => ({
 }));
 vi.mock(import("blockly/blocks"), () => ({}));
 // Mocked like locale and storage: the icon subclass needs a real Blockly.
-vi.mock(import("@/blockly/blockView"), () => ({
+vi.mock(import("@/blockly/block-view"), () => ({
   numberBlocks: vi.fn(),
   findBlockByNumber: vi.fn(),
   getBlockNumber: vi.fn(),
