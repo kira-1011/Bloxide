@@ -64,7 +64,7 @@ describe("BlocklyWorkspace", () => {
     expect(screen.getByRole("banner")).toHaveTextContent("Bloxide");
     expect(screen.getByRole("heading", { name: "MOVEMENT" })).toBeInTheDocument();
     expect(screen.getByRole("img")).toHaveAccessibleName(/^Sprite at/);
-    expect(screen.getByText("Say “Hey Bloxide”")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Run program" })).toBeInTheDocument();
   });
 
   it("passes the shared options object, so a render never re-injects", () => {

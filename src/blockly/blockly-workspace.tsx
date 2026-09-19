@@ -22,7 +22,7 @@ export default function BlocklyWorkspace() {
   return (
     <div className="flex h-full w-full flex-col bg-bg">
       <header className="flex h-16 shrink-0 items-center gap-3.5 border-b border-edge bg-surface px-6">
-        <span className="flex size-9.5 items-center justify-center rounded-xl bg-voice-listening font-display text-2xl font-bold text-white">
+        <span className="flex size-9.5 items-center justify-center rounded-xl bg-brand font-display text-2xl font-bold text-white">
           B
         </span>
         <span className="font-display text-[26px] font-bold text-ink">Bloxide</span>
@@ -34,15 +34,7 @@ export default function BlocklyWorkspace() {
         <SpriteStage />
       </div>
 
-      <VoiceBar
-        // Not wired to Voxide yet, so the bar must not claim to be listening.
-        // An error is the one thing it has to report today.
-        state={error ? "answering" : "asleep"}
-        answer={error ?? undefined}
-        running={running}
-        onRun={run}
-        onStop={stop}
-      />
+      <VoiceBar running={running} error={error ?? undefined} onRun={run} onStop={stop} />
     </div>
   );
 }

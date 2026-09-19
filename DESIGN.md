@@ -62,13 +62,16 @@ Each category owns one fill. White text sits on all of them at 4.5:1 or better.
 
 ### Voice states
 
-Three states, one colour each, never more.
+Voxide's widget owns them. It draws the mic, the waveform, the transcript and
+the listening states, and its colours are set in the Voxide dashboard, not
+here. A second set of states in our own code would only drift from the SDK.
 
-| State     | Token                     | Hex       | Meaning                                   |
-| --------- | ------------------------- | --------- | ----------------------------------------- |
-| Asleep    | `--color-voice-asleep`    | `#CBD5E1` | Not recording. Waiting for the wake word. |
-| Listening | `--color-voice-listening` | `#2563EB` | Recording. Live transcript visible.       |
-| Answering | `--color-voice-answering` | `#7C3AED` | The assistant is reporting or asking.     |
+What we own is where it sits: inline along the bottom, in a place that never
+moves, at a size a child who cannot aim can still find.
+
+| Token           | Hex       | Used for                       |
+| --------------- | --------- | ------------------------------ |
+| `--color-brand` | `#2563EB` | The mark in the header, accent |
 
 ### Actions
 
@@ -78,9 +81,8 @@ Three states, one colour each, never more.
 | `--color-stop`      | `#B91C1C` | Stop                                        |
 | `--color-highlight` | `#FDE68A` | Ring on the block the last sentence touched |
 
-Purple belongs to the assistant. Do not use it for a block category.
-Green belongs to Run. Do not use it for confirmations, or a child reads a
-successful sentence as a running program.
+Green belongs to Run. Do not use it for anything else, or a child reads an
+ordinary message as a running program.
 
 ## Typography
 
@@ -129,7 +131,7 @@ running.
 | rail +  | numbered, highlighted          | stage, speech |
 | list    |                                | bubble        |
 +---------+--------------------------------+---------------+
-| Voice bar: state, mic, transcript, answer, Run, Stop     |
+| Voice bar: the Voxide widget, then Run and Stop           |
 +----------------------------------------------------------+
 ```
 
@@ -140,8 +142,10 @@ running.
   screen, so the badge and the assistant can never disagree.
 - **Sprite** fills its column and speaks in a bubble. There is no separate
   output panel; `say` renders where the child is already looking.
-- **Voice bar** is the tallest fixed element on the page, because knowing
-  whether you were heard matters more than any single control.
+- **Voice bar** holds the Voxide widget inline, plus Run and Stop. It is a
+  fixed strip rather than a floating launcher, because knowing whether you were
+  heard matters more than any single control, and a control that moves cannot
+  be aimed at.
 
 ## Voice feedback
 
@@ -152,7 +156,8 @@ in the voice bar.
 Rules:
 
 - **Confirm with the fact, not the request.** "Added a say block. It is block
-  4." Read the value back out of the block after setting it.
+  4." Read the value back out of the block after setting it. The widget speaks
+  it and shows it in its transcript.
 - **Ask only for the missing piece.** Heard "make it steps" with no number, ask
   "How many steps?" Never "please repeat that".
 - **Say when nothing changed.** A scroll or a failed match states that the
@@ -200,9 +205,8 @@ Tailwind v4 reads its theme from CSS. Add to `src/index.css`:
   --color-cat-look: #0e7490;
   --color-cat-control: #c2410c;
 
-  --color-voice-asleep: #cbd5e1;
-  --color-voice-listening: #2563eb;
-  --color-voice-answering: #7c3aed;
+  /* Voxide's widget owns the listening states and their colours. */
+  --color-brand: #2563eb;
 
   --color-run: #047857;
   --color-stop: #b91c1c;
