@@ -21,8 +21,7 @@ interface Run {
   cancelled: boolean;
 }
 
-// Not reactive state: a run handle the cancellation guards compare by identity,
-// so a superseded run cannot write into the one that replaced it.
+// A handle the cancellation guards compare by identity, not reactive state.
 let currentRun: Run | null = null;
 
 // The state lives here rather than in React because a program can be started by
@@ -95,5 +94,5 @@ export async function runProgram(workspace: Blockly.Workspace): Promise<void> {
   }
 }
 
-/** For components, so nothing outside this module reaches for the store. */
+/** For `useStore` in components; everything else goes through the functions above. */
 export { store as runStore };

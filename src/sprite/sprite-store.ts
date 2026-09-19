@@ -64,5 +64,5 @@ export function setSaying(text: string | null): void {
   store.setState({ saying: text === "" ? null : text });
 }
 
-/** For components, so nothing outside this module reaches for the store. */
+/** For `useStore` in components; everything else goes through the functions above. */
 export { store as spriteStore };
