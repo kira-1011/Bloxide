@@ -55,6 +55,28 @@ Mount Blockly once via `Blockly.inject()` in a `useEffect` with a ref. Keep the
 `WorkspaceSvg` in a ref or context, never in React state. Dispose on unmount.
 Blocks are not React components.
 
+### Do not rebuild what Blockly has
+
+Check its API before writing anything that inspects or changes a workspace.
+Blockly already models this domain, and a second version of the same thing
+drifts from it the moment either side gains a feature. What we lean on:
+
+- `serialization.workspaces.save` / `.load` to persist a program, and
+  `serialization.blocks.save(block, …)` to describe one — nesting, fields and
+  all. Never hand-write a description of a workspace.
+- `javascriptGenerator` to turn blocks into code, with `INFINITE_LOOP_TRAP` as
+  the hook that makes a run interruptible.
+- `block.select()` for the highlight, `block.dispose(true)` to heal the stack
+  under a deleted block, `workspace.undo()` for undo.
+- `workspace.getBlocksByType`, `getTopBlocks`, `getBlockById` to find blocks,
+  and `connection.connect()` — which returns false rather than throwing — to
+  join them.
+
+Two exceptions, both because Blockly says so in its own docs:
+`common.getMainWorkspace()` is discouraged, so we hold the workspace ourselves
+in `src/blockly/activeWorkspace.ts`; and `common.setSelected()` is `@internal`,
+so selection goes through `block.select()`.
+
 ## Voxide
 
 - Register capabilities with `ai.register({ name: { description, params, handler } })`.
@@ -78,12 +100,17 @@ dead-ending.
 
 ## Feedback
 
-Every action produces three things at once:
+Every action is felt two ways:
 
-- **Visual** — the block appears and is briefly highlighted.
+- **Visual** — the workspace shows the result: a block appears, moves, or is
+  gone. Where an action has a block as its subject, that block is left
+  selected, so it is clear what the next sentence will act on.
 - **Spoken** — a short confirmation ("move block added, ten steps"). Not a
-  paragraph.
-- **State** — `readProgram` speaks the whole script aloud on request.
+  paragraph. Every action says something, including the ones that change no
+  blocks.
+
+The agent also reads the program through `bindState`, so it answers from what
+is actually on the workspace rather than from what it believes it did.
 
 ## Conventions
 
@@ -123,7 +150,7 @@ Write minimal comments. Code should be self-documenting.
 
 ## Skills
 
-Three installed skills carry rules this project follows. Load the relevant one
+Four installed skills carry rules this project follows. Load the relevant one
 before working in its area, not after.
 
 - **`vercel-react-best-practices`** — before writing or changing any React
@@ -142,8 +169,11 @@ before working in its area, not after.
   three directories.
 - **`changelog-generator`** — whenever `CHANGELOG.md` is updated. See Changelog
   below.
+- **`typescript-advanced-types`** — before writing a type that is more than a
+  shape: generics, conditional or mapped types, template literals, narrowing
+  helpers, or anything derived from another type. See Type safety below.
 
-All three are committed to the repo under `.agents/skills/`, so a clone has them
+All four are committed to the repo under `.agents/skills/`, so a clone has them
 without anyone installing anything. `skills-lock.json` pins the versions. The
 `.claude/skills/` symlinks are machine-local and gitignored — recreate them with
 `npx skills install` if your agent reads from there.
@@ -154,10 +184,32 @@ To update a skill, re-run its install from the repo root and commit the diff:
 npx skills add vercel-labs/agent-skills@vercel-react-best-practices -y
 npx skills add mattpocock/skills@improve-codebase-architecture -y
 npx skills add https://github.com/composiohq/awesome-claude-skills --skill changelog-generator
+npx skills add wshobson/agents --skill typescript-advanced-types
 ```
 
 Prefer them over improvising a style: a rule from a skill beats a preference
 argued in review.
+
+## Type safety
+
+**Types must hold end to end, from the data's source to where it is used.** A
+type that stops at a module boundary is a type that lies at the next one.
+
+- **Derive, never duplicate.** One list is the source: the toolbox defines the
+  blocks, and `BlockType`, the agent's enum and the spoken vocabulary are all
+  derived from it. A second hand-kept list drifts, and the drift is silent.
+- **Parse at the boundary, then narrow.** Anything from outside the program —
+  a model's tool call, `localStorage`, the network — arrives as `unknown` or
+  `string` no matter what the signature claims. Validate it into a real type at
+  the edge with a type guard, and let everything inside rely on the narrowed
+  type. `addBlock` takes `string` and narrows through `resolveBlockType`
+  precisely because a model can send anything.
+- **A cast is a defect.** `as` and `as unknown as` silence the compiler without
+  changing the value; reach for a guard, a `satisfies`, or a better shape
+  instead. Where a third-party signature forces one, say why in a comment.
+- **`as const satisfies`** keeps literal types while still checking the shape.
+  It is what makes a config object usable as a type.
+- No `any`. No `@ts-expect-error` without the reason on the line above.
 
 ## Changelog
 

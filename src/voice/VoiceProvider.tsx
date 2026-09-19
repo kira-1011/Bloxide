@@ -1,4 +1,14 @@
-/** Mounts the Voxide widget once, at the root, so calls survive navigation. */
+import { VoxideWidget } from "@voxide/react";
+import { voice } from "@/voice/client";
+
+/**
+ * Mounted once at the root so a call survives navigation. Wake word is Chrome
+ * and Edge only and is configured in the dashboard, not here.
+ */
 export function VoiceProvider() {
-  return null;
+  if (!voice) return null;
+
+  // No appearance props: position, title and the rest are the dashboard's,
+  // and passing them here overrides the Appearance tab.
+  return <VoxideWidget client={voice} />;
 }

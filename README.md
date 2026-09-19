@@ -32,22 +32,28 @@ The child speaks. Each sentence does one thing.
 "Run it."                          -> the sprite moves
 ```
 
-Every action gives feedback three ways. The block appears and is highlighted,
-the app says what it did, and the child can ask "read my program" at any point
-to hear the whole script back.
+That is the shape. Today the first two kinds of sentence work — adding a block,
+nesting it, deleting it, running and stopping. Changing a value, and the sprite
+itself, are still to come.
 
-Saying "that block" works three ways, in order: the block just created stays
-the target, so "make it ten steps" needs no reference at all; failing that,
-position ("the second repeat", "the last one"); and every block carries a
-number on screen as the fallback that keeps a misheard word from dead-ending.
+Every action gives feedback two ways: the block appears and stays highlighted,
+and the app says what it did in a sentence.
+
+Saying "that block" is meant to work three ways, in order: the block just
+created stays the target, so "make it ten steps" needs no reference at all;
+failing that, position ("the second repeat", "the last one"); and every block
+carries a number on screen as the fallback that keeps a misheard word from
+dead-ending. Only the first is built — naming a type currently picks the last
+block of that type.
 
 The agent only places blocks. It does not write programs. If you say "make me a
 game" it will not build one, because the point is that the child is the author.
 
 ## Status
 
-Early. A drag and drop Blockly workspace is up with a starter toolbox; the
-Bloxide blocks and the whole voice layer are still to come.
+Early, but the loop is closed: blocks can be added, nested, deleted, run and
+stopped by speaking. The Bloxide block set — a stage and a sprite — is still to
+come.
 
 ## Stack
 

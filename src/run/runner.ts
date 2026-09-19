@@ -4,14 +4,44 @@ import { javascriptGenerator, Order } from "blockly/javascript";
 /** Thrown by the loop trap to unwind a stopped program. */
 class ProgramStopped extends Error {}
 
+export interface OutputLine {
+  /** Printing the same text twice is normal, so lines carry an id. */
+  readonly id: number;
+  readonly text: string;
+}
+
+export interface RunState {
+  readonly running: boolean;
+  readonly output: readonly OutputLine[];
+  readonly error: string | null;
+}
+
 interface Run {
   cancelled: boolean;
 }
 
 let currentRun: Run | null = null;
 
-export interface RunProgramOptions {
-  readonly onOutput?: (line: string) => void;
+// The state lives here rather than in React because a program can be started by
+// a button or by voice, and both must see the same run.
+let state: RunState = { running: false, output: [], error: null };
+const listeners = new Set<() => void>();
+
+function setState(patch: Partial<RunState>): void {
+  state = { ...state, ...patch };
+  for (const listener of listeners) listener();
+}
+
+export function subscribeToRun(listener: () => void): () => void {
+  listeners.add(listener);
+  return () => {
+    listeners.delete(listener);
+  };
+}
+
+/** Stable between changes, as useSyncExternalStore requires. */
+export function getRunState(): RunState {
+  return state;
 }
 
 // window.alert cannot be dismissed by voice.
@@ -29,26 +59,30 @@ export function stopProgram(): void {
   if (currentRun) currentRun.cancelled = true;
 }
 
-/** Runs the child's blocks. The `runProgram` capability calls this too. */
-export async function runProgram(
-  workspace: Blockly.Workspace,
-  { onOutput }: RunProgramOptions = {},
-): Promise<void> {
+/** Both the Run button and the capability call this. */
+export async function runProgram(workspace: Blockly.Workspace): Promise<void> {
   stopProgram();
 
   const run: Run = { cancelled: false };
   currentRun = run;
+  setState({ running: true, output: [], error: null });
 
   // Without a yield inside loops the program holds the main thread and Stop
   // never gets a chance to land.
   javascriptGenerator.INFINITE_LOOP_TRAP = "await __tick();\n";
   const code = javascriptGenerator.workspaceToCode(workspace);
 
+  // Checked on both sides of the yield: a second run can start, and replace
+  // currentRun, while this one is parked on the timer.
   const tick = async (): Promise<void> => {
     if (run.cancelled) throw new ProgramStopped();
     await new Promise((resolve) => setTimeout(resolve, 0));
+    if (run.cancelled) throw new ProgramStopped();
   };
-  const print = (value: unknown): void => onOutput?.(String(value));
+  const print = (value: unknown): void => {
+    if (currentRun !== run) return;
+    setState({ output: [...state.output, { id: state.output.length, text: String(value) }] });
+  };
 
   try {
     const program = new Function("__tick", "print", `return (async () => {\n${code}\n})();`) as (
@@ -58,8 +92,13 @@ export async function runProgram(
 
     await program(tick, print);
   } catch (error) {
-    if (!(error instanceof ProgramStopped)) throw error;
+    if (!(error instanceof ProgramStopped) && currentRun === run) {
+      setState({ error: error instanceof Error ? error.message : String(error) });
+    }
   } finally {
-    if (currentRun === run) currentRun = null;
+    if (currentRun === run) {
+      currentRun = null;
+      setState({ running: false });
+    }
   }
 }

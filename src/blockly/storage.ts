@@ -3,8 +3,8 @@ import * as Blockly from "blockly/core";
 const STORAGE_KEY = "bloxide/workspace";
 
 /**
- * Persists the program so a reload never costs a child the script they could
- * only build slowly. The `saveProgram` / `loadProgram` capabilities call these.
+ * Persists the program so a reload never costs the work so far. The
+ * `saveProgram` / `loadProgram` capabilities call these.
  */
 export function saveWorkspace(workspace: Blockly.Workspace): void {
   const data = Blockly.serialization.workspaces.save(workspace);
@@ -24,13 +24,17 @@ export function loadWorkspace(workspace: Blockly.Workspace): void {
   }
   if (!data) return;
 
-  // Events off, or restoring reads as the child having just built it.
+  // Events off, or restoring reads as new work having just been done.
   Blockly.Events.disable();
   try {
+    const parsed: unknown = JSON.parse(data);
+    // An array is an object too, and Blockly expects a keyed state.
+    if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
+      throw new Error("not a workspace");
+    }
+
     // v13 takes an options object here, not the codelab's positional boolean.
-    Blockly.serialization.workspaces.load(JSON.parse(data) as object, workspace, {
-      recordUndo: false,
-    });
+    Blockly.serialization.workspaces.load(parsed, workspace, { recordUndo: false });
   } catch {
     // A corrupt payload must not stop the editor from opening.
     clearWorkspace();

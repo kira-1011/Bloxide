@@ -1,6 +1,7 @@
 import * as Blockly from "blockly/core";
 import "blockly/blocks";
 import { useEffect, useEffectEvent, useRef, type RefObject } from "react";
+import { setActiveWorkspace } from "@/blockly/activeWorkspace";
 import { initBlocklyLocale } from "@/blockly/locale";
 import { loadWorkspace, saveWorkspace } from "@/blockly/storage";
 
@@ -28,7 +29,7 @@ export function useBlocklyWorkspace({
   const workspaceRef = useRef<Blockly.WorkspaceSvg | null>(null);
 
   // Keeps onChange out of the effect deps: an inline arrow would otherwise
-  // re-inject on every render and throw away the child's program.
+  // re-inject on every render and throw away the program.
   const handleChange = useEffectEvent((workspace: Blockly.WorkspaceSvg) => {
     onChange?.(workspace);
   });
@@ -41,6 +42,7 @@ export function useBlocklyWorkspace({
 
     const workspace = Blockly.inject(container, options);
     workspaceRef.current = workspace;
+    setActiveWorkspace(workspace);
 
     // Restore before listening, or the load is heard as a change.
     loadWorkspace(workspace);
@@ -61,6 +63,7 @@ export function useBlocklyWorkspace({
       workspace.removeChangeListener(listener);
       workspace.dispose();
       workspaceRef.current = null;
+      setActiveWorkspace(null);
     };
   }, [options]);
 

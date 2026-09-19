@@ -1,4 +1,4 @@
-import type { OutputLine } from "@/run/useProgramRunner";
+import type { OutputLine } from "@/run/runner";
 
 interface OutputPanelProps {
   readonly output: readonly OutputLine[];

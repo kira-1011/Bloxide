@@ -11,5 +11,9 @@ let installed = false;
 export function initBlocklyLocale(): void {
   if (installed) return;
   installed = true;
-  Blockly.setLocale(en as unknown as Record<string, string>);
+  // The namespace carries a non-string `default` alongside the messages.
+  const messages = Object.fromEntries(
+    Object.entries(en).filter((entry): entry is [string, string] => typeof entry[1] === "string"),
+  );
+  Blockly.setLocale(messages);
 }
