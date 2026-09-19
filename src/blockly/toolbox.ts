@@ -64,6 +64,9 @@ export const TOOLBOX: Blockly.utils.toolbox.ToolboxDefinition = {
 
 export type BlockType = (typeof CATEGORIES)[number]["contents"][number]["type"];
 
+/** Typed view of the same data, so readers never cast TOOLBOX open. */
+export const TOOLBOX_CATEGORIES: readonly Category[] = CATEGORIES;
+
 interface ResolvedEntry {
   readonly type: BlockType;
   readonly say: readonly string[];

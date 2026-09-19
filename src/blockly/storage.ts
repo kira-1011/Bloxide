@@ -27,10 +27,11 @@ export function loadWorkspace(workspace: Blockly.Workspace): void {
   // Events off, or restoring reads as new work having just been done.
   Blockly.Events.disable();
   try {
+    const parsed: unknown = JSON.parse(data);
+    if (typeof parsed !== "object" || parsed === null) throw new Error("not a workspace");
+
     // v13 takes an options object here, not the codelab's positional boolean.
-    Blockly.serialization.workspaces.load(JSON.parse(data) as object, workspace, {
-      recordUndo: false,
-    });
+    Blockly.serialization.workspaces.load(parsed, workspace, { recordUndo: false });
   } catch {
     // A corrupt payload must not stop the editor from opening.
     clearWorkspace();

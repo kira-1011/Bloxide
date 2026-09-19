@@ -1,4 +1,5 @@
 import type { VoxideActionConfig } from "@voxide/react";
+import { defineAction } from "@/voice/defineAction";
 import { getActiveWorkspace } from "@/blockly/activeWorkspace";
 import { forgetBlock, rememberBlock, resolveBlock } from "@/blockly/blockReference";
 import { BLOCK_TYPES, resolveBlockType } from "@/blockly/toolbox";
@@ -119,8 +120,8 @@ export function haltProgram(): string {
   return "Stopped";
 }
 
-export const VOICE_ACTIONS: Record<string, VoxideActionConfig> = {
-  addBlock: {
+export const VOICE_ACTIONS = {
+  addBlock: defineAction({
     description: "Add a block to the workspace",
     params: {
       type: {
@@ -132,10 +133,10 @@ export const VOICE_ACTIONS: Record<string, VoxideActionConfig> = {
         description: "The Blockly type id of the block to add",
       },
     },
-    handler: async (args) => addBlock(args as { type: string }),
-  },
+    handler: ({ type }) => addBlock({ type }),
+  }),
 
-  attachBlock: {
+  attachBlock: defineAction({
     description:
       "Attach one block to another: inside it if it fits there, otherwise below it. " +
       "Omit 'type' to attach the block that was just added.",
@@ -152,10 +153,10 @@ export const VOICE_ACTIONS: Record<string, VoxideActionConfig> = {
         description: "The block to attach it to",
       },
     },
-    handler: async (args) => attachBlock(args as { type?: string; to: string }),
-  },
+    handler: (args) => attachBlock(args),
+  }),
 
-  deleteBlock: {
+  deleteBlock: defineAction({
     description: "Delete a block. Omit 'type' to delete the block that was just added.",
     params: {
       type: {
@@ -164,16 +165,16 @@ export const VOICE_ACTIONS: Record<string, VoxideActionConfig> = {
         description: "The block to delete. Omit for the block just added.",
       },
     },
-    handler: async (args) => deleteBlock(args as { type?: string }),
-  },
+    handler: (args) => deleteBlock(args),
+  }),
 
-  runProgram: {
+  runProgram: defineAction({
     description: "Run the program",
-    handler: async () => startProgram(),
-  },
+    handler: () => startProgram(),
+  }),
 
-  stopProgram: {
+  stopProgram: defineAction({
     description: "Stop the running program",
-    handler: async () => haltProgram(),
-  },
-};
+    handler: () => haltProgram(),
+  }),
+} satisfies Record<string, VoxideActionConfig>;

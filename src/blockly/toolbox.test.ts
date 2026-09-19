@@ -1,15 +1,9 @@
 import * as Blockly from "blockly/core";
 import "blockly/blocks";
 import { describe, expect, it } from "vitest";
-import { BLOCK_TYPES, TOOLBOX } from "@/blockly/toolbox";
+import { BLOCK_TYPES, TOOLBOX_CATEGORIES } from "@/blockly/toolbox";
 
-interface ToolboxCategory {
-  kind: string;
-  name?: string;
-  contents?: { kind: string; type?: string }[];
-}
-
-const categories = (TOOLBOX as { contents: ToolboxCategory[] }).contents;
+const categories = TOOLBOX_CATEGORIES;
 
 const blockTypes = BLOCK_TYPES;
 
@@ -19,7 +13,7 @@ describe("TOOLBOX", () => {
     for (const category of categories) {
       expect(category.kind).toBe("category");
       expect(category.name).toBeTruthy();
-      expect(category.contents?.length ?? 0).toBeGreaterThan(0);
+      expect(category.contents.length).toBeGreaterThan(0);
     }
   });
 
@@ -29,7 +23,7 @@ describe("TOOLBOX", () => {
     expect(blockTypes.length).toBeGreaterThan(0);
     for (const type of blockTypes) {
       expect(type, `unknown block type: ${type}`).toBeDefined();
-      expect(Blockly.Blocks[type as string], `unknown block type: ${type}`).toBeDefined();
+      expect(Blockly.Blocks[type], `unknown block type: ${type}`).toBeDefined();
     }
   });
 });
