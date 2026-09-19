@@ -40,7 +40,7 @@ afterEach(() => {
 });
 
 describe("BlocklyWorkspace", () => {
-  it("injects into the canvas between the controls and the output", () => {
+  it("injects into the canvas between the palette and the stage", () => {
     render(<BlocklyWorkspace />);
 
     const [element, options] = inject.mock.calls[0] as [HTMLElement, unknown];
@@ -48,7 +48,7 @@ describe("BlocklyWorkspace", () => {
     // The canvas takes the leftover width; palette and stage flank it.
     expect(element).toHaveClass("grow");
     expect(element.previousElementSibling).toHaveTextContent("MOVEMENT");
-    expect(element.nextElementSibling).toHaveTextContent("Your sprite");
+    expect(element.nextElementSibling).toContainElement(screen.getByRole("img"));
   });
 
   it("offers run and stop from the voice bar", () => {
@@ -63,7 +63,7 @@ describe("BlocklyWorkspace", () => {
 
     expect(screen.getByRole("banner")).toHaveTextContent("Bloxide");
     expect(screen.getByRole("heading", { name: "MOVEMENT" })).toBeInTheDocument();
-    expect(screen.getByLabelText("Your sprite")).toBeInTheDocument();
+    expect(screen.getByRole("img")).toHaveAccessibleName(/^Sprite at/);
     expect(screen.getByText("Say “Hey Bloxide”")).toBeInTheDocument();
   });
 

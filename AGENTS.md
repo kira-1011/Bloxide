@@ -26,7 +26,7 @@ These are product decisions, not preferences. Do not relax them.
 3. **No mouse-only paths.** If an action can only be done by clicking, it is a
    bug. Keyboard and pointer input stay available, but voice must reach
    everything.
-4. **Small on purpose.** One stage, one sprite, ~15 blocks. A reliable small
+4. **Small on purpose.** One stage, one sprite, a small block set. A reliable small
    surface beats a broad unreliable one.
 
 ## Stack
@@ -37,6 +37,24 @@ These are product decisions, not preferences. Do not relax them.
 - Tailwind CSS (`@tailwindcss/vite`)
 - `blockly` (core, direct)
 - `@voxide/react` (voice)
+- `zustand` (shared state)
+
+## State
+
+**Shared state is a Zustand vanilla store, never React context.** Voice handlers
+run at module scope and never see a component, so anything both they and the UI
+touch has to be readable without React at all.
+
+- Create it with `createStore` from `zustand/vanilla`, and bind components with
+  `useStore(store)` — which is `useSyncExternalStore` underneath, so a snapshot
+  has to stay identity-stable. Zustand handles that; a hand-rolled store did not.
+- Export named functions for the changes (`moveSteps(10)`), not the store. A
+  caller should not have to know a store exists, and it keeps the store
+  swappable.
+- Clamp and validate inside the store, so voice, a program and a reset cannot
+  reach different states.
+- A selector that builds a new object needs `useShallow`, or it re-renders every
+  time. Prefer reading whole state for small stores.
 
 ## Blockly
 
@@ -424,6 +442,9 @@ Now maintained by the Raspberry Pi Foundation, supported by Google.
 - TypeScript — https://www.typescriptlang.org/docs/
 - Tailwind CSS — https://tailwindcss.com/docs
 - Tailwind + Vite setup — https://tailwindcss.com/docs/installation/using-vite
+- Zustand — https://zustand.docs.pmnd.rs
+- Zustand `createStore` (vanilla) —
+  https://zustand.docs.pmnd.rs/reference/apis/create-store
 - Vitest — https://vitest.dev
 - Vitest config reference — https://vitest.dev/config/
 - Writing tests with AI — https://vitest.dev/guide/learn/writing-tests-with-ai

@@ -56,7 +56,7 @@ Voice works. The editor can be driven by speaking to it.
 - Saying which one by position: "the second repeat", "the last one".
 - Phrasing that leans on the block already being the subject — "make it four
   times" is understood as a value change only when the block is named.
-- The Bloxide block set: one stage, one sprite, about fifteen blocks.
+- The Bloxide block set: one stage, one sprite, a small set of blocks.
 
 ## 2026-09-18
 
@@ -88,4 +88,4 @@ Day one. The editor works end to end; nothing is voice-driven yet.
 ### Next
 
 - The voice layer: speaking a block into existence.
-- The Bloxide block set: one stage, one sprite, about fifteen blocks.
+- The Bloxide block set: one stage, one sprite, a small set of blocks.

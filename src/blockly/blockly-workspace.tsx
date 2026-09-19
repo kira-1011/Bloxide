@@ -1,8 +1,10 @@
+import { useEffect } from "react";
 import { WORKSPACE_OPTIONS } from "@/blockly/options";
 import { useBlocklyWorkspace } from "@/blockly/use-blockly-workspace";
 import { BlockPalette } from "@/palette/block-palette";
 import { useProgramRunner } from "@/run/use-program-runner";
-import { SpriteStage } from "@/stage/sprite-stage";
+import { SpriteStage } from "@/sprite/sprite-stage";
+import { setSaying } from "@/sprite/sprite-store";
 import { VoiceBar } from "@/voice/voice-bar";
 
 /** Default export: the entry of the lazily loaded editor chunk. */
@@ -12,7 +14,10 @@ export default function BlocklyWorkspace() {
 
   // Printing speaks through the sprite. A panel of its own would put the words
   // where the child is not already looking.
-  const saying = output.at(-1)?.text;
+  const printed = output.at(-1)?.text;
+  useEffect(() => {
+    setSaying(printed ?? null);
+  }, [printed]);
 
   return (
     <div className="flex h-full w-full flex-col bg-bg">
@@ -26,7 +31,7 @@ export default function BlocklyWorkspace() {
       <div className="flex min-h-0 grow">
         <BlockPalette />
         <div ref={containerRef} className="min-w-0 grow" />
-        <SpriteStage saying={saying} />
+        <SpriteStage />
       </div>
 
       <VoiceBar
