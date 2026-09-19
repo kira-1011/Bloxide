@@ -227,3 +227,42 @@ describe("referring by number", () => {
     expect(workspace.getTopBlocks(false)).toHaveLength(1);
   });
 });
+
+describe("numbers stay usable without waiting for Blockly's events", () => {
+  it("numbers a new block before the handler returns", async () => {
+    await addBlock({ type: "controls_repeat_ext" });
+
+    // Blockly queues its create event; a spoken number must work right away.
+    expect(workspace.getAllBlocks(true).map(getBlockNumber)).toEqual([1]);
+  });
+
+  it("renumbers after an attach, so a badge is never stale", async () => {
+    await addBlock({ type: "controls_repeat_ext" });
+    await addBlock({ type: "text_print" });
+    await attachBlock({ to: "repeat" });
+
+    const numbers = workspace.getAllBlocks(true).map(getBlockNumber);
+    expect(numbers).toEqual([1, 2]);
+  });
+
+  it("closes the gap after a delete before returning", async () => {
+    await addBlock({ type: "controls_repeat_ext" });
+    await addBlock({ type: "text_print" });
+    await addBlock({ type: "math_number" });
+
+    deleteBlock({ number: 2 });
+
+    expect(workspace.getAllBlocks(true).map(getBlockNumber)).toEqual([1, 2]);
+  });
+
+  it("finds a block by the badge it wears, not by its position", async () => {
+    await addBlock({ type: "controls_repeat_ext" });
+    await addBlock({ type: "text_print" });
+    const print = workspace.getBlocksByType("text_print", false)[0];
+    const badge = getBlockNumber(print!) ?? 0;
+
+    const spoken = deleteBlock({ number: badge });
+
+    expect(spoken).toContain("text_print");
+  });
+});

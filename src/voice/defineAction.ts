@@ -41,8 +41,12 @@ function parseArgs<P extends ParamSchema>(
     }
 
     if (rule.type === "number") {
-      // A model sends "3" as readily as 3, and both mean the same block.
-      const asNumber = typeof value === "number" ? value : Number(String(value).trim());
+      // A model sends "3" as readily as 3. Nothing else converts: String([3])
+      // is "3", and an array would silently become a block reference.
+      if (typeof value !== "number" && typeof value !== "string") {
+        return { ok: false, reason: `The ${name} has to be a number.` };
+      }
+      const asNumber = typeof value === "number" ? value : Number(value.trim());
       if (!Number.isFinite(asNumber)) {
         return { ok: false, reason: `The ${name} has to be a number.` };
       }

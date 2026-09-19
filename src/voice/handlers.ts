@@ -1,6 +1,7 @@
 import type { VoxideActionConfig } from "@voxide/react";
 import { defineAction } from "@/voice/defineAction";
 import { getActiveWorkspace } from "@/blockly/activeWorkspace";
+import { numberBlocks } from "@/blockly/blockNumbers";
 import { forgetBlock, rememberBlock, resolveBlock } from "@/blockly/blockReference";
 import { BLOCK_TYPES, resolveBlockType } from "@/blockly/toolbox";
 import { isProgramRunning, runProgram, stopProgram } from "@/run/runner";
@@ -43,6 +44,9 @@ export async function addBlock({ type }: { type: string }): Promise<string> {
     block.select();
   }
   rememberBlock(block);
+  // Blockly queues its create event, so the workspace listener would not
+  // renumber until after this returns and the next spoken number would miss.
+  numberBlocks(workspace);
 
   return `Added a ${resolved} block`;
 }
@@ -96,7 +100,10 @@ export async function attachBlock({
 
   if (child.outputConnection) {
     for (const connection of openInputs(ConnectionType.INPUT_VALUE)) {
-      if (connection?.connect(child.outputConnection)) return `Put it in the ${parent.type} block`;
+      if (connection?.connect(child.outputConnection)) {
+        numberBlocks(workspace);
+        return `Put it in the ${parent.type} block`;
+      }
     }
   }
 
@@ -104,11 +111,13 @@ export async function attachBlock({
     // Inside first: "put a move block inside the repeat" is the common case.
     for (const connection of openInputs(ConnectionType.NEXT_STATEMENT)) {
       if (connection?.connect(child.previousConnection)) {
+        numberBlocks(workspace);
         return `Put it inside the ${parent.type} block`;
       }
     }
     if (parent.nextConnection && !parent.nextConnection.targetConnection) {
       if (parent.nextConnection.connect(child.previousConnection)) {
+        numberBlocks(workspace);
         return `Put it under the ${parent.type} block`;
       }
     }
@@ -127,6 +136,7 @@ export function deleteBlock({ type, number }: { type?: string; number?: number }
   forgetBlock(block);
   // healStack: what was under it reconnects instead of being orphaned.
   block.dispose(true);
+  numberBlocks(workspace);
 
   return `Deleted the ${removed} block`;
 }

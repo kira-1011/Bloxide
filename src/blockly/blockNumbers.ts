@@ -24,12 +24,18 @@ export function numberBlocks(workspace: Blockly.Workspace): void {
   });
 }
 
-/** Resolves "block three" to the block wearing that number. */
+/**
+ * Resolves "block three" to the block wearing that badge.
+ *
+ * By the badge, not by position: Blockly queues its events, so between a change
+ * and the next renumber the order can differ from what is on screen. What the
+ * speaker can see has to win.
+ */
 export function findBlockByNumber(
   workspace: Blockly.Workspace,
   number: number,
 ): Blockly.Block | null {
-  return workspace.getAllBlocks(true)[number - 1] ?? null;
+  return workspace.getAllBlocks(true).find((block) => getBlockNumber(block) === number) ?? null;
 }
 
 /** The number a block is wearing, for speaking it back. */
