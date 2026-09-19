@@ -93,7 +93,10 @@ in priority order:
 
 1. **Implicit** — the block just created stays the target ("make it ten steps").
 2. **Positional** — "the second repeat", "the last one".
-3. **Numeric overlay** — every block numbered, always available as fallback.
+3. **Numeric overlay** — a number drawn on each block that can be acted on,
+   always available as fallback. A bare literal carries none: zelos draws its
+   field across the whole block, so a badge would sit under the field editor
+   and read as part of the value.
 
 Implicit is the default. Numbers are the floor that keeps a misrecognition from
 dead-ending.

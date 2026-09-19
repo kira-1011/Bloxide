@@ -21,7 +21,7 @@ Voice works. The editor can be driven by speaking to it.
 - **The assistant can see the workspace.** It reads the real program before
   each sentence, so it answers from what is there rather than from what it
   thinks it did.
-- **Every block wears a number.** Say "delete block two" or "put block one
+- **Say which one by number.** Say "delete block two" or "put block one
   inside block three" and the right one moves, even when two blocks look alike.
   A bare number or piece of text is named by what it is rather than by a badge,
   so nothing sits on top of the value you are typing.
