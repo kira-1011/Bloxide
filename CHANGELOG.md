@@ -10,8 +10,9 @@ Voice works. The editor can be driven by speaking to it.
 ### Added
 
 - **Speak to build.** Ask for a block and it appears. Ask for it to go inside
-  another and it snaps in. Ask for one to go and it does, with whatever sat
-  under it reconnecting. Ask to run the program, or to stop it mid-loop.
+  another and it snaps in — including one repeat inside another, where no name
+  could tell the two apart. Ask for a block to go and it does, with whatever
+  sat under it reconnecting. Ask to run the program, or to stop it mid-loop.
 - **"That one" means something.** Attaching and deleting act on the block just
   added unless another is named, and the block the last sentence touched stays
   highlighted, so it is clear what the next one will act on.
@@ -21,8 +22,9 @@ Voice works. The editor can be driven by speaking to it.
   each sentence, so it answers from what is there rather than from what it
   thinks it did.
 - **Every block wears a number.** Say "delete block two" or "put block one
-  inside block three" and the right one moves, even when two blocks look alike
-  and no name could tell them apart.
+  inside block three" and the right one moves, even when two blocks look alike.
+  A bare number or piece of text is named by what it is rather than by a badge,
+  so nothing sits on top of the value you are typing.
 - **A new block comes to you.** Adding one while looking elsewhere in a long
   program used to leave the screen unchanged, which read as nothing having
   happened. The workspace now moves to show it — and stays put when the block
