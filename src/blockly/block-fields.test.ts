@@ -99,6 +99,16 @@ describe("setFieldValue", () => {
     expect(change.spoken).toContain("not a number");
   });
 
+  it("leaves a number alone when the value is empty", () => {
+    const loop = workspace.newBlock("controls_repeat");
+    const before = loop.getFieldValue("TIMES");
+
+    const change = setFieldValue(loop, "   ");
+
+    expect(change.ok).toBe(false);
+    expect(loop.getFieldValue("TIMES")).toBe(before);
+  });
+
   it("says so when the block holds no value at all", () => {
     const change = setFieldValue(workspace.newBlock("text_print"), "4");
 

@@ -83,7 +83,10 @@ export function setFieldValue(block: Blockly.Block, spoken: string): FieldChange
   }
 
   if (field instanceof Blockly.FieldNumber) {
-    const asNumber = Number(normalise(spoken));
+    // Number("") is 0, so an empty value would silently set the field to zero.
+    const normalised = normalise(spoken);
+    if (!normalised) return { ok: false, spoken: "That is not a number." };
+    const asNumber = Number(normalised);
     if (!Number.isFinite(asNumber)) return { ok: false, spoken: `${spoken} is not a number.` };
     block.setFieldValue(asNumber, field.name ?? "");
     return { ok: true, spoken: `Set it to ${block.getFieldValue(field.name ?? "")}` };
