@@ -51,7 +51,7 @@ describe("numberBlocks", () => {
   it("closes the gap when a block is deleted", () => {
     const first = workspace.newBlock("controls_repeat_ext");
     const second = workspace.newBlock("text_print");
-    const third = workspace.newBlock("math_number");
+    const third = workspace.newBlock("controls_if");
     numberBlocks(workspace);
 
     second.dispose(false);
@@ -61,6 +61,26 @@ describe("numberBlocks", () => {
     const remaining = [getBlockNumber(first), getBlockNumber(third)];
     expect(remaining).toContain(1);
     expect(remaining).toContain(2);
+  });
+});
+
+describe("badges on value blocks", () => {
+  it("leaves a literal unbadged, because zelos draws its field over the block", () => {
+    const number = workspace.newBlock("math_number");
+    const text = workspace.newBlock("text");
+
+    numberBlocks(workspace);
+
+    expect(getBlockNumber(number)).toBeNull();
+    expect(getBlockNumber(text)).toBeNull();
+  });
+
+  it("still badges a value block that takes blocks of its own", () => {
+    const compare = workspace.newBlock("logic_compare");
+
+    numberBlocks(workspace);
+
+    expect(getBlockNumber(compare)).toBe(1);
   });
 });
 

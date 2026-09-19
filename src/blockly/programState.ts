@@ -32,10 +32,12 @@ export function describeProgram(): ProgramSnapshot {
   return {
     running: isProgramRunning(),
     blockCount: all.length,
-    numbered: all.map((block, index) => ({
-      number: getBlockNumber(block) ?? index + 1,
-      type: block.type,
-    })),
+    // Only what is actually badged on screen: a number the speaker cannot see
+    // is a number they cannot say.
+    numbered: all.flatMap((block) => {
+      const number = getBlockNumber(block);
+      return number === null ? [] : [{ number, type: block.type }];
+    }),
     stacks: workspace
       .getTopBlocks(true)
       .map((block) =>

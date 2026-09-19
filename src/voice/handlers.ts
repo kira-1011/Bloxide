@@ -2,6 +2,7 @@ import type { VoxideActionConfig } from "@voxide/react";
 import { defineAction } from "@/voice/defineAction";
 import { getActiveWorkspace } from "@/blockly/activeWorkspace";
 import { numberBlocks } from "@/blockly/blockNumbers";
+import { revealBlock } from "@/blockly/reveal";
 import { forgetBlock, rememberBlock, resolveBlock } from "@/blockly/blockReference";
 import { BLOCK_TYPES, resolveBlockType } from "@/blockly/toolbox";
 import { isProgramRunning, runProgram, stopProgram } from "@/run/runner";
@@ -42,6 +43,7 @@ export async function addBlock({ type }: { type: string }): Promise<string> {
     // Blockly's own selection is the highlight AGENTS.md asks for, and it
     // shows which block the next utterance will act on.
     block.select();
+    revealBlock(workspace, block);
   }
   rememberBlock(block);
   // Blockly queues its create event, so the workspace listener would not

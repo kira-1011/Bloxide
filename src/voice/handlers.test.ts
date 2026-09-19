@@ -248,7 +248,7 @@ describe("numbers stay usable without waiting for Blockly's events", () => {
   it("closes the gap after a delete before returning", async () => {
     await addBlock({ type: "controls_repeat_ext" });
     await addBlock({ type: "text_print" });
-    await addBlock({ type: "math_number" });
+    await addBlock({ type: "controls_if" });
 
     deleteBlock({ number: 2 });
 
