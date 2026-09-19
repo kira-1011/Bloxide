@@ -1,5 +1,6 @@
 import * as Blockly from "blockly/core";
 import "blockly/blocks";
+import { javascriptGenerator } from "blockly/javascript";
 import { afterEach, describe, expect, it } from "vitest";
 import {
   getRunState,
@@ -9,6 +10,7 @@ import {
   subscribeToRun,
 } from "@/run/runner";
 import { initBlocklyLocale } from "@/blockly/locale";
+import { getSpriteState, moveSteps, resetSprite, setSaying } from "@/sprite/sprite-store";
 
 // Block definitions interpolate Blockly.Msg; without messages newBlock throws.
 initBlocklyLocale();
@@ -39,6 +41,7 @@ function printBlock(workspace: Blockly.Workspace, text: string) {
 
 afterEach(() => {
   stopProgram();
+  resetSprite();
 });
 
 describe("runProgram", () => {
@@ -119,5 +122,45 @@ describe("runProgram", () => {
     // The old run was parked on its timer when the new one started; anything
     // it printed afterwards must not appear here.
     expect(getRunState().output.map((line) => line.text)).toEqual(["new"]);
+  });
+
+  it("cuts a waiting program short the moment Stop lands", async () => {
+    // The only way into the runner's own sleep is generated code, and no block
+    // emits a sprite call yet. Borrow one for the length of this test: a bare
+    // setTimeout would keep the program alive for the full minute.
+    const original = javascriptGenerator.forBlock["text_print"];
+    if (!original) throw new Error("expected text_print to have a generator");
+    javascriptGenerator.forBlock["text_print"] = () => "await __sprite.wait(60);\n";
+
+    try {
+      const workspace = workspaceWith((ws) => printBlock(ws, "unused"));
+      const running = runProgram(workspace);
+      await new Promise((resolve) => setTimeout(resolve, 10));
+
+      stopProgram();
+      await running;
+
+      expect(isProgramRunning()).toBe(false);
+    } finally {
+      javascriptGenerator.forBlock["text_print"] = original;
+    }
+  });
+
+  it("puts the sprite back before it starts", async () => {
+    // Scratch does not do this. A child who runs the same program twice and
+    // gets two different pictures reads the blocks as broken.
+    moveSteps(80);
+
+    await runProgram(workspaceWith(() => {}));
+
+    expect(getSpriteState().x).toBe(0);
+  });
+
+  it("clears the speech bubble when the program ends", async () => {
+    setSaying("hello");
+
+    await runProgram(workspaceWith(() => {}));
+
+    expect(getSpriteState().saying).toBeNull();
   });
 });
