@@ -61,6 +61,10 @@ export function resolveBlock(
   const type = resolveBlockType(reference);
   if (!type) return null;
 
-  const matches = workspace.getBlocksByType(type, true).filter((block) => block.id !== exclude);
+  // Shadows excluded: a shadow is a default inside another block, so deleting
+  // or attaching one would take away the slot it fills.
+  const matches = workspace
+    .getBlocksByType(type, true)
+    .filter((block) => block.id !== exclude && !block.isShadow());
   return matches.at(-1) ?? null;
 }

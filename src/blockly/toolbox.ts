@@ -1,10 +1,21 @@
 import type * as Blockly from "blockly/core";
 
+/** Shadow blocks that fill a block's value slots, keyed by input name. */
+type SlotDefaults = Readonly<Record<string, Blockly.serialization.blocks.ConnectionState>>;
+
 interface BlockEntry {
   kind: "block";
   type: string;
   /** Spoken names for this block. Blockly's type ids are not sayable. */
   say: readonly string[];
+  /**
+   * What fills the block's value inputs when it is made.
+   *
+   * An empty value input is a hole, and the only way to fill one is to drop a
+   * block into it — the one thing our users cannot do. A shadow is a default
+   * that is already there to be spoken over.
+   */
+  inputs?: SlotDefaults;
 }
 
 interface Category {
@@ -38,7 +49,15 @@ const CATEGORIES = [
     categorystyle: "math_category",
     contents: [
       { kind: "block", type: "math_number", say: ["number"] },
-      { kind: "block", type: "math_arithmetic", say: ["math", "arithmetic", "sum"] },
+      {
+        kind: "block",
+        type: "math_arithmetic",
+        say: ["math", "arithmetic", "sum"],
+        inputs: {
+          A: { shadow: { type: "math_number", fields: { NUM: 1 } } },
+          B: { shadow: { type: "math_number", fields: { NUM: 1 } } },
+        },
+      },
     ],
   },
   {
@@ -47,7 +66,12 @@ const CATEGORIES = [
     categorystyle: "text_category",
     contents: [
       { kind: "block", type: "text", say: ["text", "words", "string"] },
-      { kind: "block", type: "text_print", say: ["print", "say", "show"] },
+      {
+        kind: "block",
+        type: "text_print",
+        say: ["print", "say", "show"],
+        inputs: { TEXT: { shadow: { type: "text", fields: { TEXT: "" } } } },
+      },
     ],
   },
 ] as const satisfies readonly Category[];
@@ -58,7 +82,13 @@ export const TOOLBOX: Blockly.utils.toolbox.ToolboxDefinition = {
   // Copied because Blockly wants a mutable array and CATEGORIES is frozen.
   contents: CATEGORIES.map((category) => ({
     ...category,
-    contents: category.contents.map(({ kind, type }) => ({ kind, type })),
+    contents: category.contents.map((entry) => ({
+      kind: entry.kind,
+      type: entry.type,
+      // The flyout draws the shadows too, so a block looks the same however it
+      // was made.
+      ...("inputs" in entry ? { inputs: entry.inputs } : {}),
+    })),
   })),
 };
 
@@ -70,6 +100,7 @@ export const TOOLBOX_CATEGORIES: readonly Category[] = CATEGORIES;
 interface ResolvedEntry {
   readonly type: BlockType;
   readonly say: readonly string[];
+  readonly inputs?: SlotDefaults;
 }
 
 // Annotated: flatMap over a const tuple of unlike categories widens to unknown.
@@ -96,6 +127,11 @@ function normalise(value: string): string {
  * word still arrives sometimes. Rejecting "repeat" would dead-end the one
  * sentence the README teaches.
  */
+/** The shadow defaults for a type, for whoever is making the block. */
+export function slotDefaults(type: BlockType): SlotDefaults | undefined {
+  return ENTRIES.find((entry) => entry.type === type)?.inputs;
+}
+
 export function resolveBlockType(value: string): BlockType | null {
   const wanted = normalise(value);
 

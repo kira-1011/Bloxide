@@ -3,6 +3,19 @@
 Progress on Bloxide, newest first. Written for anyone following the build, not
 just developers — see the Changelog section of AGENTS.md.
 
+## 2026-09-20
+
+### Added
+
+- **No more holes to fill.** A block asked for by voice now arrives with its
+  values already in it — a print block used to appear with an empty socket, and
+  the only way to fill a socket is to drag a block into it. Saying a new value
+  over the one that is there works instead.
+- **Blocks that hold two values.** Where a block has more than one value the
+  assistant asks which — "say which one: x or y" — rather than guessing and
+  changing the wrong one. A block with a single value is unchanged: no naming
+  needed.
+
 ## 2026-09-19
 
 Voice works. The editor can be driven by speaking to it.

@@ -29,6 +29,11 @@ afterEach(() => {
   setActiveWorkspace(null);
 });
 
+/** The blocks someone put there, without the shadows filling their slots. */
+function ownBlocks(): Blockly.Block[] {
+  return workspace.getAllBlocks(true).filter((block) => !block.isShadow());
+}
+
 describe("addBlock", () => {
   it("offers the model the toolbox types to choose from", () => {
     // Without the enum the model passes the child's word — "repeat" — through.
@@ -36,11 +41,22 @@ describe("addBlock", () => {
     expect(BLOCK_TYPES).toContain("controls_repeat");
   });
 
+  it("fills a value input with a shadow, so no hole is left to drop into", async () => {
+    // newBlock makes no shadows: a print block would arrive with an empty
+    // socket, and filling one takes a mouse.
+    await addBlock({ type: "text_print" });
+
+    const print = workspace.getBlocksByType("text_print", false)[0];
+    expect(print?.getInputTargetBlock("TEXT")?.isShadow()).toBe(true);
+    expect(await setParam({ value: "hello" })).toContain("hello");
+    expect(print?.getInputTargetBlock("TEXT")?.getFieldValue("TEXT")).toBe("hello");
+  });
+
   it("adds the block the agent asked for", async () => {
     const spoken = await addBlock({ type: "controls_repeat" });
 
-    expect(workspace.getAllBlocks(false)).toHaveLength(1);
-    expect(workspace.getAllBlocks(false)[0]?.type).toBe("controls_repeat");
+    expect(ownBlocks()).toHaveLength(1);
+    expect(ownBlocks()[0]?.type).toBe("controls_repeat");
     expect(spoken).toContain("Added");
   });
 
@@ -149,7 +165,7 @@ describe("deleteBlock", () => {
 
     deleteBlock({ type: "repeat" });
 
-    expect(workspace.getAllBlocks(false).map((block) => block.type)).toEqual(["text_print"]);
+    expect(ownBlocks().map((block) => block.type)).toEqual(["text_print"]);
   });
 
   it("says so when there is nothing to delete", () => {
@@ -190,7 +206,7 @@ describe("referring by number", () => {
     const spoken = deleteBlock({ number });
 
     expect(spoken).toContain("controls_repeat");
-    expect(workspace.getAllBlocks(false).map((block) => block.type)).toEqual(["text_print"]);
+    expect(ownBlocks().map((block) => block.type)).toEqual(["text_print"]);
   });
 
   it("beats a type name when both are given", async () => {
@@ -242,8 +258,7 @@ describe("numbers stay usable without waiting for Blockly's events", () => {
     await addBlock({ type: "text_print" });
     await attachBlock({ to: "repeat" });
 
-    const numbers = workspace.getAllBlocks(true).map(getBlockNumber);
-    expect(numbers).toEqual([1, 2]);
+    expect(ownBlocks().map(getBlockNumber)).toEqual([1, 2]);
   });
 
   it("closes the gap after a delete before returning", async () => {
@@ -253,7 +268,7 @@ describe("numbers stay usable without waiting for Blockly's events", () => {
 
     deleteBlock({ number: 2 });
 
-    expect(workspace.getAllBlocks(true).map(getBlockNumber)).toEqual([1, 2]);
+    expect(ownBlocks().map(getBlockNumber)).toEqual([1, 2]);
   });
 
   it("finds a block by the badge it wears, not by its position", async () => {
@@ -302,6 +317,31 @@ describe("setParam", () => {
     await addBlock({ type: "controls_repeat" });
 
     expect(await setParam({ number: 9, value: "4" })).toBe("There is no block 9.");
+  });
+
+  it("writes into the slot it is given", async () => {
+    await addBlock({ type: "math_arithmetic" });
+
+    const spoken = await setParam({ value: "7", slot: "b" });
+
+    const sum = workspace.getBlocksByType("math_arithmetic", false)[0];
+    expect(sum?.getInputTargetBlock("B")?.getFieldValue("NUM")).toBe(7);
+    expect(sum?.getInputTargetBlock("A")?.getFieldValue("NUM")).toBe(1);
+    expect(spoken).toContain("7");
+  });
+
+  it("asks which value rather than guessing, on a block that holds two", async () => {
+    await addBlock({ type: "math_arithmetic" });
+
+    const spoken = await setParam({ value: "7" });
+
+    expect(spoken).toBe("Say which one: op, a or b.");
+    expect(workspace.getBlocksByType("math_arithmetic", false)[0]?.getFieldValue("OP")).toBe("ADD");
+  });
+
+  it("offers the slot to the agent, so it can name one", () => {
+    expect(VOICE_ACTIONS.setParam?.params?.slot?.type).toBe("string");
+    expect(VOICE_ACTIONS.setParam?.params?.slot?.required).toBeFalsy();
   });
 
   it("leaves the block alone when the value does not fit it", async () => {

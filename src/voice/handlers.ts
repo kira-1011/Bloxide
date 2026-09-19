@@ -4,7 +4,7 @@ import { getActiveWorkspace } from "@/blockly/active-workspace";
 import { setFieldValue } from "@/blockly/block-fields";
 import { numberBlocks, revealBlock, selectOnly } from "@/blockly/block-view";
 import { forgetBlock, rememberBlock, resolveBlock } from "@/blockly/block-reference";
-import { BLOCK_TYPES, resolveBlockType } from "@/blockly/toolbox";
+import { BLOCK_TYPES, resolveBlockType, slotDefaults } from "@/blockly/toolbox";
 import { isProgramRunning, runProgram, stopProgram } from "@/run/runner";
 
 // Every capability the agent can invoke. One block, one connection or one value
@@ -30,13 +30,17 @@ export async function addBlock({ type }: { type: string }): Promise<string> {
     return `I do not know a block called ${type}.`;
   }
 
-  const { BlockSvg } = await import("blockly/core");
-  const block = workspace.newBlock(resolved);
-  // A headless workspace has no SVG to build; a rendered one needs both calls
-  // or the block exists in the model and never appears on screen.
+  const { BlockSvg, serialization } = await import("blockly/core");
+  // Through the serialiser rather than newBlock: newBlock makes no shadows, so
+  // a block with value inputs would arrive with holes in it, and filling a hole
+  // takes a block dropped in by hand.
+  const inputs = slotDefaults(resolved);
+  const block = serialization.blocks.append(
+    { type: resolved, ...(inputs ? { inputs } : {}) },
+    workspace,
+  );
+
   if (block instanceof BlockSvg) {
-    block.initSvg();
-    block.render();
     // Every new block starts at the origin, so without this they pile up on
     // each other and a number cannot be read off the screen.
     workspace.cleanUp();
@@ -129,24 +133,30 @@ export async function attachBlock({
 }
 
 /**
- * Changes the value written on a block: how many times a loop repeats, what a
+ * Changes a value written on a block: how many times a loop repeats, what a
  * piece of text says, which comparison is made.
+ *
+ * A block can hold more than one — `go to x () y ()` holds two — so `slot`
+ * names which. Left out where there is only one, and where there is more than
+ * one it is asked for rather than guessed.
  */
 export async function setParam({
   type,
   number,
   value,
+  slot,
 }: {
   type?: string;
   number?: number;
   value: string;
+  slot?: string;
 }): Promise<string> {
   const workspace = getActiveWorkspace();
 
   const block = resolveBlock(workspace, type, number !== undefined ? { number } : {});
   if (!block) return describeMiss(type, number);
 
-  const change = setFieldValue(block, value);
+  const change = setFieldValue(block, value, slot);
   if (!change.ok) return change.spoken;
 
   const { BlockSvg } = await import("blockly/core");
@@ -277,6 +287,12 @@ export const VOICE_ACTIONS = {
         type: "string",
         required: true,
         description: "The new value: digits for a number, or the words for a comparison",
+      },
+      slot: {
+        type: "string",
+        description:
+          "Which value to change on a block that holds more than one, such as " +
+          "x or y. Omit when the block holds only one.",
       },
     },
     handler: (args) => setParam(args),
