@@ -1,6 +1,6 @@
 # Bloxide
 
-A block programming environment that motor disabled children control by speaking.
+A block programming environment for motor disabled children.
 
 ## The problem
 
