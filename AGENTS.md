@@ -86,6 +86,19 @@ so selection goes through `block.select()`.
   with `isWakeWordSupported()` before showing any listening affordance.
 - Chrome and Edge only for wake word. Degrade to click-to-talk elsewhere.
 
+**The manifest has two buckets, and the agent only reads one.** The SDK picks
+the bucket by hostname — `localhost` and `127.0.0.1` post to `development`,
+every other host posts to `production` — but `/api/sdk/init`, which is what a
+live session reads, serves `production` only. So a capability added while
+developing on localhost is invisible to the agent no matter how many times the
+dashboard says it synced. To exercise a new capability end to end, serve the
+dev server on the LAN address (`pnpm dev --host`) and open it by IP: the SDK
+then reports `production` and publishes where the agent will look.
+
+This also means **the deployed site owns the production manifest**. Whoever
+loads it last overwrites it, so a capability that has merged but not deployed
+gets reverted by the next visitor. Redeploy before relying on it.
+
 ## Block reference
 
 The child cannot point, so they need a way to say "that block". Three layers,

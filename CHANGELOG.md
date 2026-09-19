@@ -29,6 +29,11 @@ Voice works. The editor can be driven by speaking to it.
   program used to leave the screen unchanged, which read as nothing having
   happened. The workspace now moves to show it — and stays put when the block
   was already in view.
+- **Change a value, not just place a block.** "Set the repeat block to four
+  times" changes how many times a loop runs; "change it to not equals" picks a
+  different comparison; a text block takes whatever is said. The block being
+  changed is highlighted and brought into view, so the change is seen as well
+  as heard.
 
 ### Why it is built this way
 
@@ -38,7 +43,9 @@ Voice works. The editor can be driven by speaking to it.
 - **The assistant cannot invent blocks.** It chooses from the blocks the
   toolbox offers, and anything else is refused before it reaches the workspace.
 - **Nothing is claimed that did not happen.** Every confirmation comes from
-  what the editor actually did.
+  what the editor actually did — a value is read back out of the block after it
+  is set, so a number the block quietly adjusted is spoken as the block holds
+  it, not as it was asked for.
 - **A number that can be seen is a number that can be said.** Numbers come
   from what is drawn on screen, not from an order kept separately, so the badge
   and the assistant can never point at different blocks. Numbers a misheard
@@ -46,8 +53,9 @@ Voice works. The editor can be driven by speaking to it.
 
 ### Next
 
-- Changing a value by voice — "make it four times" is still out of reach.
 - Saying which one by position: "the second repeat", "the last one".
+- Phrasing that leans on the block already being the subject — "make it four
+  times" is understood as a value change only when the block is named.
 - The Bloxide block set: one stage, one sprite, about fifteen blocks.
 
 ## 2026-09-18
