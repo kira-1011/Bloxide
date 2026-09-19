@@ -1,5 +1,5 @@
 import { describe, expect, expectTypeOf, it, vi } from "vitest";
-import { type ArgsOf, defineAction } from "@/voice/defineAction";
+import { type ArgsOf, defineAction } from "@/voice/define-action";
 
 const SCHEMA = {
   to: { type: "string", required: true },

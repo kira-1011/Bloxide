@@ -1,9 +1,9 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import App from "@/App";
+import App from "@/app";
 
 // Never resolves: holds the editor chunk in flight so the fallback stays up.
-vi.mock(import("@/blockly/BlocklyWorkspace"), () => new Promise<never>(() => {}));
+vi.mock(import("@/blockly/blockly-workspace"), () => new Promise<never>(() => {}));
 
 describe("App", () => {
   it("paints a shell while the editor chunk loads", () => {

@@ -1,6 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import BlocklyWorkspace from "@/blockly/BlocklyWorkspace";
+import BlocklyWorkspace from "@/blockly/blockly-workspace";
 import { WORKSPACE_OPTIONS } from "@/blockly/options";
 
 const inject = vi.fn();
@@ -11,7 +11,7 @@ vi.mock(import("blockly/core"), () => ({
 }));
 vi.mock(import("blockly/blocks"), () => ({}));
 // Mocked like locale and storage: the icon subclass needs a real Blockly.
-vi.mock(import("@/blockly/blockView"), () => ({
+vi.mock(import("@/blockly/block-view"), () => ({
   numberBlocks: vi.fn(),
   findBlockByNumber: vi.fn(),
   getBlockNumber: vi.fn(),

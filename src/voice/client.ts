@@ -1,5 +1,5 @@
 import { VoxideClient } from "@voxide/react";
-import { describeProgram } from "@/blockly/programState";
+import { describeProgram } from "@/blockly/program-state";
 import { VOICE_ACTIONS } from "@/voice/handlers";
 
 const publicKey = import.meta.env.VITE_VOXIDE_PUBLIC_KEY;
