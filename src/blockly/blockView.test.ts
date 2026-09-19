@@ -75,6 +75,19 @@ describe("badges on value blocks", () => {
     expect(getBlockNumber(text)).toBeNull();
   });
 
+  it("takes the badge away when a mutation removes the last value input", () => {
+    // text_join at zero items swaps its value inputs for a dummy EMPTY one,
+    // so it stops being badgeable while keeping the badge it already had.
+    const join = workspace.newBlock("text_join");
+    numberBlocks(workspace);
+    expect(getBlockNumber(join)).toBe(1);
+
+    join.loadExtraState?.({ itemCount: 0 });
+    numberBlocks(workspace);
+
+    expect(getBlockNumber(join)).toBeNull();
+  });
+
   it("still badges a value block that takes blocks of its own", () => {
     const compare = workspace.newBlock("logic_compare");
 

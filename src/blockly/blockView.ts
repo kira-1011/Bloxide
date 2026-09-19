@@ -24,22 +24,27 @@ function canWearBadge(block: Blockly.Block): boolean {
  * the agent can never disagree.
  */
 export function numberBlocks(workspace: Blockly.Workspace): void {
-  workspace
-    .getAllBlocks(true)
-    .filter(canWearBadge)
-    .forEach((block, index) => {
-      const number = index + 1;
-      const existing = block.getIcon(BlockNumberIcon.TYPE);
+  const all = workspace.getAllBlocks(true);
 
-      if (existing) {
-        existing.setNumber(number);
-        return;
-      }
+  // A mutation can take away the last value input, and a badge left behind
+  // would name a block the numbering no longer counts.
+  for (const block of all) {
+    if (!canWearBadge(block)) block.removeIcon(BlockNumberIcon.TYPE);
+  }
 
-      const icon = new BlockNumberIcon(block);
-      icon.setNumber(number);
-      block.addIcon(icon);
-    });
+  all.filter(canWearBadge).forEach((block, index) => {
+    const number = index + 1;
+    const existing = block.getIcon(BlockNumberIcon.TYPE);
+
+    if (existing) {
+      existing.setNumber(number);
+      return;
+    }
+
+    const icon = new BlockNumberIcon(block);
+    icon.setNumber(number);
+    block.addIcon(icon);
+  });
 }
 
 /** The number a block is wearing, for speaking it back. */
