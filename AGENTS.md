@@ -55,6 +55,28 @@ Mount Blockly once via `Blockly.inject()` in a `useEffect` with a ref. Keep the
 `WorkspaceSvg` in a ref or context, never in React state. Dispose on unmount.
 Blocks are not React components.
 
+### Do not rebuild what Blockly has
+
+Check its API before writing anything that inspects or changes a workspace.
+Blockly already models this domain, and a second version of the same thing
+drifts from it the moment either side gains a feature. What we lean on:
+
+- `serialization.workspaces.save` / `.load` to persist a program, and
+  `serialization.blocks.save(block, …)` to describe one — nesting, fields and
+  all. Never hand-write a description of a workspace.
+- `javascriptGenerator` to turn blocks into code, with `INFINITE_LOOP_TRAP` as
+  the hook that makes a run interruptible.
+- `block.select()` for the highlight, `block.dispose(true)` to heal the stack
+  under a deleted block, `workspace.undo()` for undo.
+- `workspace.getBlocksByType`, `getTopBlocks`, `getBlockById` to find blocks,
+  and `connection.connect()` — which returns false rather than throwing — to
+  join them.
+
+Two exceptions, both because Blockly says so in its own docs:
+`common.getMainWorkspace()` is discouraged, so we hold the workspace ourselves
+in `src/blockly/activeWorkspace.ts`; and `common.setSelected()` is `@internal`,
+so selection goes through `block.select()`.
+
 ## Voxide
 
 - Register capabilities with `ai.register({ name: { description, params, handler } })`.
