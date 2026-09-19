@@ -45,15 +45,26 @@ describe("BlocklyWorkspace", () => {
 
     const [element, options] = inject.mock.calls[0] as [HTMLElement, unknown];
     expect(options).toBe(WORKSPACE_OPTIONS);
-    // The canvas takes the leftover height; controls and output bracket it.
-    expect(element).toHaveClass("flex-1");
+    // The canvas takes the leftover width; palette and stage flank it.
+    expect(element).toHaveClass("grow");
+    expect(element.previousElementSibling).toHaveTextContent("MOVEMENT");
+    expect(element.nextElementSibling).toHaveTextContent("Your sprite");
   });
 
-  it("offers run and stop controls", () => {
+  it("offers run and stop from the voice bar", () => {
     render(<BlocklyWorkspace />);
 
     expect(screen.getByRole("button", { name: "Run program" })).toBeEnabled();
     expect(screen.getByRole("button", { name: "Stop program" })).toBeDisabled();
+  });
+
+  it("lays the editor out in four zones", () => {
+    render(<BlocklyWorkspace />);
+
+    expect(screen.getByRole("banner")).toHaveTextContent("Bloxide");
+    expect(screen.getByRole("heading", { name: "MOVEMENT" })).toBeInTheDocument();
+    expect(screen.getByLabelText("Your sprite")).toBeInTheDocument();
+    expect(screen.getByText("Say “Hey Bloxide”")).toBeInTheDocument();
   });
 
   it("passes the shared options object, so a render never re-injects", () => {
