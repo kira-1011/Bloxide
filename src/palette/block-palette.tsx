@@ -1,0 +1,105 @@
+import { useRef, useState } from "react";
+import { blocksIn, CATEGORIES, type CategoryId, type PaletteBlock } from "@/palette/catalogue";
+
+/**
+ * Every block the child may ask for, always on screen.
+ *
+ * The rail scrolls the list to a category and marks where you are. It does not
+ * filter: hiding blocks would turn recognition into recall, and a misheard
+ * category would silently change what the child thinks they can say.
+ */
+export function BlockPalette() {
+  const [current, setCurrent] = useState<CategoryId>("movement");
+  const headings = useRef(new Map<CategoryId, HTMLHeadingElement>());
+
+  const jumpTo = (id: CategoryId) => {
+    setCurrent(id);
+    headings.current.get(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
+  return (
+    <div className="flex w-[348px] shrink-0 border-r border-edge bg-surface">
+      <div className="flex w-[72px] shrink-0 flex-col items-center gap-1.5 border-r border-slate-200 bg-surface-sunken py-3">
+        {CATEGORIES.map((category) => {
+          const active = category.id === current;
+          return (
+            <button
+              key={category.id}
+              type="button"
+              onClick={() => jumpTo(category.id)}
+              aria-label={`Scroll to the ${category.label} blocks`}
+              aria-current={active ? "true" : undefined}
+              className={`flex w-[60px] cursor-pointer flex-col items-center gap-1 rounded-2xl py-2 ${
+                active ? "bg-bg" : "bg-transparent"
+              }`}
+            >
+              <span
+                className={`size-8 rounded-full ${category.fill} ${
+                  active ? "ring-2 ring-white ring-offset-2 ring-offset-current" : ""
+                }`}
+              />
+              <span
+                className={`text-[10px] font-bold tracking-wide ${
+                  active ? "text-ink" : "text-ink-muted"
+                }`}
+              >
+                {category.label.toUpperCase()}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
+      <div className="flex min-w-0 grow flex-col gap-1 overflow-y-auto py-3 pr-3 pl-3.5">
+        {CATEGORIES.map((category) => (
+          <section key={category.id} className="flex flex-col gap-1">
+            <h2
+              ref={(node) => {
+                if (node) headings.current.set(category.id, node);
+                else headings.current.delete(category.id);
+              }}
+              className="flex items-center gap-1.5 pt-1.5 text-[11px] font-bold tracking-wide text-ink-muted"
+            >
+              <span className={`size-2.5 rounded ${category.fill}`} aria-hidden="true" />
+              {category.label.toUpperCase()}
+            </h2>
+            {blocksIn(category.id).map((block) => (
+              <PaletteBlockRow key={block.id} block={block} fill={category.fill} />
+            ))}
+          </section>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+interface PaletteBlockRowProps {
+  readonly block: PaletteBlock;
+  readonly fill: string;
+}
+
+/** Display only for now: speaking is what places a block. */
+function PaletteBlockRow({ block, fill }: PaletteBlockRowProps) {
+  return (
+    <div
+      className={`flex items-center gap-1.5 rounded-[9px] px-2.5 py-1.5 font-display text-sm font-semibold text-white ${fill}`}
+    >
+      {block.parts.map((part) =>
+        "word" in part ? (
+          <span key={part.key}>{part.word}</span>
+        ) : (
+          <span
+            key={part.key}
+            className={
+              part.slot
+                ? "rounded-full bg-white px-2 py-px text-[13px] font-bold text-ink"
+                : "rounded-[5px] bg-black/25 px-4.5 py-0.5"
+            }
+          >
+            {part.slot}
+          </span>
+        ),
+      )}
+    </div>
+  );
+}
