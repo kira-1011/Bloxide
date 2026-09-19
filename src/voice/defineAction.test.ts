@@ -54,6 +54,20 @@ describe("defineAction", () => {
     expect(handler).toHaveBeenCalledWith({ to: "repeat" });
   });
 
+  it("refuses a value that is neither a number nor a word", async () => {
+    // Number(String([3])) is 3, so an array would have become block 3.
+    const numeric = defineAction({
+      description: "test",
+      params: { number: { type: "number", required: true } },
+      handler: () => "done",
+    });
+
+    expect(await numeric.handler?.({ number: [3] })).toBe("The number has to be a number.");
+    expect(await numeric.handler?.({ number: {} })).toBe("The number has to be a number.");
+    expect(await numeric.handler?.({ number: "3" })).toBe("done");
+    expect(await numeric.handler?.({ number: 3 })).toBe("done");
+  });
+
   it("treats an empty optional param as absent", async () => {
     const handler = vi.fn(() => "done");
 

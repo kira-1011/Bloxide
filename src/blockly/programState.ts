@@ -1,5 +1,6 @@
 import * as Blockly from "blockly/core";
 import { getActiveWorkspace, hasActiveWorkspace } from "@/blockly/activeWorkspace";
+import { getBlockNumber } from "@/blockly/blockView";
 import { isProgramRunning } from "@/run/runner";
 
 export interface ProgramSnapshot {
@@ -7,9 +8,11 @@ export interface ProgramSnapshot {
   readonly blockCount: number;
   /** Blockly's own serialisation, one entry per top-level stack. */
   readonly stacks: readonly Blockly.serialization.blocks.State[];
+  /** What each badge on screen says, so a spoken number resolves. */
+  readonly numbered: readonly { readonly number: number; readonly type: string }[];
 }
 
-const EMPTY: ProgramSnapshot = { running: false, blockCount: 0, stacks: [] };
+const EMPTY: ProgramSnapshot = { running: false, blockCount: 0, stacks: [], numbered: [] };
 
 /**
  * What the agent is told about the workspace before each utterance.
@@ -24,9 +27,17 @@ export function describeProgram(): ProgramSnapshot {
 
   const workspace = getActiveWorkspace();
 
+  const all = workspace.getAllBlocks(true);
+
   return {
     running: isProgramRunning(),
-    blockCount: workspace.getAllBlocks(false).length,
+    blockCount: all.length,
+    // Only what is actually badged on screen: a number the speaker cannot see
+    // is a number they cannot say.
+    numbered: all.flatMap((block) => {
+      const number = getBlockNumber(block);
+      return number === null ? [] : [{ number, type: block.type }];
+    }),
     stacks: workspace
       .getTopBlocks(true)
       .map((block) =>

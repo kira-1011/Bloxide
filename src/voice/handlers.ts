@@ -1,6 +1,8 @@
 import type { VoxideActionConfig } from "@voxide/react";
 import { defineAction } from "@/voice/defineAction";
 import { getActiveWorkspace } from "@/blockly/activeWorkspace";
+import { numberBlocks } from "@/blockly/blockView";
+import { revealBlock } from "@/blockly/blockView";
 import { forgetBlock, rememberBlock, resolveBlock } from "@/blockly/blockReference";
 import { BLOCK_TYPES, resolveBlockType } from "@/blockly/toolbox";
 import { isProgramRunning, runProgram, stopProgram } from "@/run/runner";
@@ -11,6 +13,12 @@ import { isProgramRunning, runProgram, stopProgram } from "@/run/runner";
 // Blockly is imported inside the handlers, not at the top: the voice layer is
 // eager, so a static import drags ~800 kB back into the entry chunk. By the
 // time a handler runs, the editor chunk has already loaded it.
+
+function describeMiss(type?: string, number?: number): string {
+  if (number !== undefined) return `There is no block ${number}.`;
+  if (type) return `I cannot find a ${type} block.`;
+  return "I am not sure which block you mean.";
+}
 
 export async function addBlock({ type }: { type: string }): Promise<string> {
   const workspace = getActiveWorkspace();
@@ -29,11 +37,18 @@ export async function addBlock({ type }: { type: string }): Promise<string> {
   if (block instanceof BlockSvg) {
     block.initSvg();
     block.render();
+    // Every new block starts at the origin, so without this they pile up on
+    // each other and a number cannot be read off the screen.
+    workspace.cleanUp();
     // Blockly's own selection is the highlight AGENTS.md asks for, and it
     // shows which block the next utterance will act on.
     block.select();
+    revealBlock(workspace, block);
   }
   rememberBlock(block);
+  // Blockly queues its create event, so the workspace listener would not
+  // renumber until after this returns and the next spoken number would miss.
+  numberBlocks(workspace);
 
   return `Added a ${resolved} block`;
 }
@@ -43,20 +58,37 @@ export async function addBlock({ type }: { type: string }): Promise<string> {
  * Blockly refuses connections that make no sense, so a wrong pairing is a
  * spoken "that does not fit" rather than a broken program.
  */
-export async function attachBlock({ type, to }: { type?: string; to: string }): Promise<string> {
+export async function attachBlock({
+  type,
+  number,
+  to,
+  toNumber,
+}: {
+  type?: string;
+  number?: number;
+  to?: string;
+  toNumber?: number;
+}): Promise<string> {
   const workspace = getActiveWorkspace();
 
-  const child = resolveBlock(workspace, type);
-  if (!child)
-    return type ? `I cannot find a ${type} block.` : "I am not sure which block you mean.";
+  const child = resolveBlock(workspace, type, number !== undefined ? { number } : {});
+  if (!child) return describeMiss(type, number);
 
   // Excluded, or "put the repeat inside the other repeat" resolves to the very
   // block being moved and nesting two of a kind becomes impossible.
-  const parent = resolveBlock(workspace, to, { exclude: child.id });
+  const parent = resolveBlock(workspace, to, {
+    exclude: child.id,
+    ...(toNumber !== undefined ? { number: toNumber } : {}),
+  });
   if (!parent) {
-    return resolveBlock(workspace, to)?.id === child.id
+    const withoutExclusion = resolveBlock(
+      workspace,
+      to,
+      toNumber !== undefined ? { number: toNumber } : {},
+    );
+    return withoutExclusion?.id === child.id
       ? "A block cannot be attached to itself."
-      : `I cannot find a ${to} block.`;
+      : describeMiss(to, toNumber);
   }
 
   const { ConnectionType } = await import("blockly/core");
@@ -70,7 +102,10 @@ export async function attachBlock({ type, to }: { type?: string; to: string }): 
 
   if (child.outputConnection) {
     for (const connection of openInputs(ConnectionType.INPUT_VALUE)) {
-      if (connection?.connect(child.outputConnection)) return `Put it in the ${parent.type} block`;
+      if (connection?.connect(child.outputConnection)) {
+        numberBlocks(workspace);
+        return `Put it in the ${parent.type} block`;
+      }
     }
   }
 
@@ -78,11 +113,13 @@ export async function attachBlock({ type, to }: { type?: string; to: string }): 
     // Inside first: "put a move block inside the repeat" is the common case.
     for (const connection of openInputs(ConnectionType.NEXT_STATEMENT)) {
       if (connection?.connect(child.previousConnection)) {
+        numberBlocks(workspace);
         return `Put it inside the ${parent.type} block`;
       }
     }
     if (parent.nextConnection && !parent.nextConnection.targetConnection) {
       if (parent.nextConnection.connect(child.previousConnection)) {
+        numberBlocks(workspace);
         return `Put it under the ${parent.type} block`;
       }
     }
@@ -91,17 +128,17 @@ export async function attachBlock({ type, to }: { type?: string; to: string }): 
   return `A ${child.type} block does not fit there.`;
 }
 
-export function deleteBlock({ type }: { type?: string }): string {
+export function deleteBlock({ type, number }: { type?: string; number?: number }): string {
   const workspace = getActiveWorkspace();
 
-  const block = resolveBlock(workspace, type);
-  if (!block)
-    return type ? `I cannot find a ${type} block.` : "I am not sure which block you mean.";
+  const block = resolveBlock(workspace, type, number !== undefined ? { number } : {});
+  if (!block) return describeMiss(type, number);
 
   const removed = block.type;
   forgetBlock(block);
   // healStack: what was under it reconnects instead of being orphaned.
   block.dispose(true);
+  numberBlocks(workspace);
 
   return `Deleted the ${removed} block`;
 }
@@ -147,30 +184,44 @@ export const VOICE_ACTIONS = {
   attachBlock: defineAction({
     description:
       "Attach one block to another: inside it if it fits there, otherwise below it. " +
-      "Omit 'type' to attach the block that was just added.",
+      "Blocks show a number on screen; prefer those. Omit the block to attach " +
+      "to use the one just added.",
     params: {
+      number: {
+        type: "number",
+        description: "The number shown on the block to attach. Most precise.",
+      },
       type: {
         type: "string",
         enum: [...BLOCK_TYPES],
-        description: "The block to attach. Omit for the block just added.",
+        description: "The block to attach, by type. Omit for the block just added.",
+      },
+      toNumber: {
+        type: "number",
+        description: "The number shown on the block to attach it to. Most precise.",
       },
       to: {
         type: "string",
-        required: true,
         enum: [...BLOCK_TYPES],
-        description: "The block to attach it to",
+        description: "The block to attach it to, by type",
       },
     },
     handler: (args) => attachBlock(args),
   }),
 
   deleteBlock: defineAction({
-    description: "Delete a block. Omit 'type' to delete the block that was just added.",
+    description:
+      "Delete a block, by the number shown on it or by type. " +
+      "Omit both to delete the block that was just added.",
     params: {
+      number: {
+        type: "number",
+        description: "The number shown on the block to delete. Most precise.",
+      },
       type: {
         type: "string",
         enum: [...BLOCK_TYPES],
-        description: "The block to delete. Omit for the block just added.",
+        description: "The block to delete, by type",
       },
     },
     handler: (args) => deleteBlock(args),

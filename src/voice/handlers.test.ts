@@ -2,6 +2,7 @@ import * as Blockly from "blockly/core";
 import "blockly/blocks";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { setActiveWorkspace } from "@/blockly/activeWorkspace";
+import { getBlockNumber, numberBlocks } from "@/blockly/blockView";
 import { initBlocklyLocale } from "@/blockly/locale";
 import {
   addBlock,
@@ -174,5 +175,94 @@ describe("run and stop", () => {
 
   it("says so when stopping with nothing running", () => {
     expect(haltProgram()).toBe("Nothing is running.");
+  });
+});
+
+describe("referring by number", () => {
+  it("deletes the block wearing the number, not the last one touched", async () => {
+    await addBlock({ type: "controls_repeat_ext" });
+    await addBlock({ type: "text_print" });
+    numberBlocks(workspace);
+    const loop = workspace.getBlocksByType("controls_repeat_ext", false)[0];
+    const number = getBlockNumber(loop!) ?? 0;
+
+    const spoken = deleteBlock({ number });
+
+    expect(spoken).toContain("controls_repeat_ext");
+    expect(workspace.getAllBlocks(false).map((block) => block.type)).toEqual(["text_print"]);
+  });
+
+  it("beats a type name when both are given", async () => {
+    await addBlock({ type: "controls_repeat_ext" });
+    await addBlock({ type: "text_print" });
+    numberBlocks(workspace);
+    const print = workspace.getBlocksByType("text_print", false)[0];
+
+    // A misheard type with the right number still lands on the right block.
+    const spoken = deleteBlock({ number: getBlockNumber(print!) ?? 0, type: "repeat" });
+
+    expect(spoken).toContain("text_print");
+  });
+
+  it("says so when no block wears that number", async () => {
+    await addBlock({ type: "text_print" });
+    numberBlocks(workspace);
+
+    expect(deleteBlock({ number: 9 })).toBe("There is no block 9.");
+  });
+
+  it("attaches by number, including two blocks of the same type", async () => {
+    await addBlock({ type: "controls_repeat_ext" });
+    await addBlock({ type: "controls_repeat_ext" });
+    numberBlocks(workspace);
+    const loops = workspace.getBlocksByType("controls_repeat_ext", true);
+    const [outer, inner] = [loops[0], loops[1]];
+
+    const spoken = await attachBlock({
+      number: getBlockNumber(inner!) ?? 0,
+      toNumber: getBlockNumber(outer!) ?? 0,
+    });
+
+    expect(spoken).toContain("inside");
+    expect(workspace.getTopBlocks(false)).toHaveLength(1);
+  });
+});
+
+describe("numbers stay usable without waiting for Blockly's events", () => {
+  it("numbers a new block before the handler returns", async () => {
+    await addBlock({ type: "controls_repeat_ext" });
+
+    // Blockly queues its create event; a spoken number must work right away.
+    expect(workspace.getAllBlocks(true).map(getBlockNumber)).toEqual([1]);
+  });
+
+  it("renumbers after an attach, so a badge is never stale", async () => {
+    await addBlock({ type: "controls_repeat_ext" });
+    await addBlock({ type: "text_print" });
+    await attachBlock({ to: "repeat" });
+
+    const numbers = workspace.getAllBlocks(true).map(getBlockNumber);
+    expect(numbers).toEqual([1, 2]);
+  });
+
+  it("closes the gap after a delete before returning", async () => {
+    await addBlock({ type: "controls_repeat_ext" });
+    await addBlock({ type: "text_print" });
+    await addBlock({ type: "controls_if" });
+
+    deleteBlock({ number: 2 });
+
+    expect(workspace.getAllBlocks(true).map(getBlockNumber)).toEqual([1, 2]);
+  });
+
+  it("finds a block by the badge it wears, not by its position", async () => {
+    await addBlock({ type: "controls_repeat_ext" });
+    await addBlock({ type: "text_print" });
+    const print = workspace.getBlocksByType("text_print", false)[0];
+    const badge = getBlockNumber(print!) ?? 0;
+
+    const spoken = deleteBlock({ number: badge });
+
+    expect(spoken).toContain("text_print");
   });
 });

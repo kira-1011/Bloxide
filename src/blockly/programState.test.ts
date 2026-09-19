@@ -20,7 +20,7 @@ afterEach(() => {
 
 describe("describeProgram", () => {
   it("reports an empty workspace as empty", () => {
-    expect(describeProgram()).toEqual({ running: false, blockCount: 0, stacks: [] });
+    expect(describeProgram()).toEqual({ running: false, blockCount: 0, stacks: [], numbered: [] });
   });
 
   it("describes nothing when no workspace is open", () => {

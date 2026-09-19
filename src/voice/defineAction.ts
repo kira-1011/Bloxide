@@ -1,20 +1,22 @@
 import type { VoxideActionConfig, VoxideParamRule } from "@voxide/react";
 
-/** Every capability so far takes strings; widen the day one does not. */
-type StringParam = VoxideParamRule & { type: "string" };
+type TypedParam = VoxideParamRule & { type: "string" | "number" };
 
-export type ParamSchema = Record<string, StringParam>;
+export type ParamSchema = Record<string, TypedParam>;
 
 type RequiredKeys<P extends ParamSchema> = {
   [K in keyof P]: P[K]["required"] extends true ? K : never;
 }[keyof P];
 
+type ValueOf<R extends TypedParam> = R["type"] extends "number" ? number : string;
+
 /**
  * The argument type a schema implies: required params present, the rest
- * optional. Declaring the schema is therefore enough to type the handler.
+ * optional, each typed by its declared param type. Declaring the schema is
+ * therefore enough to type the handler.
  */
-export type ArgsOf<P extends ParamSchema> = { [K in RequiredKeys<P>]: string } & {
-  [K in Exclude<keyof P, RequiredKeys<P>>]?: string;
+export type ArgsOf<P extends ParamSchema> = { [K in RequiredKeys<P>]: ValueOf<P[K]> } & {
+  [K in Exclude<keyof P, RequiredKeys<P>>]?: ValueOf<P[K]>;
 };
 
 interface ActionDefinition<P extends ParamSchema> {
@@ -28,7 +30,7 @@ function parseArgs<P extends ParamSchema>(
   params: P | undefined,
   raw: Record<string, unknown>,
 ): { ok: true; args: ArgsOf<P> } | { ok: false; reason: string } {
-  const parsed: Record<string, string> = {};
+  const parsed: Record<string, string | number> = {};
 
   for (const [name, rule] of Object.entries(params ?? {})) {
     const value = raw[name];
@@ -37,10 +39,24 @@ function parseArgs<P extends ParamSchema>(
       if (rule.required) return { ok: false, reason: `I need to know the ${name}.` };
       continue;
     }
+
+    if (rule.type === "number") {
+      // A model sends "3" as readily as 3. Nothing else converts: String([3])
+      // is "3", and an array would silently become a block reference.
+      if (typeof value !== "number" && typeof value !== "string") {
+        return { ok: false, reason: `The ${name} has to be a number.` };
+      }
+      const asNumber = typeof value === "number" ? value : Number(value.trim());
+      if (!Number.isFinite(asNumber)) {
+        return { ok: false, reason: `The ${name} has to be a number.` };
+      }
+      parsed[name] = asNumber;
+      continue;
+    }
+
     if (typeof value !== "string") {
       return { ok: false, reason: `The ${name} has to be a word, not ${typeof value}.` };
     }
-
     parsed[name] = value;
   }
 
