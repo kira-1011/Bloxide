@@ -1,4 +1,5 @@
 import type * as Blockly from "blockly/core";
+import { getFocusManager } from "blockly/core";
 import { BlockNumberIcon } from "@/blockly/block-number-icon";
 
 // What someone sees of a block: the number it wears, and whether it is on
@@ -74,4 +75,16 @@ export function revealBlock(workspace: Blockly.WorkspaceSvg, block: Blockly.Bloc
     bounds.top < view.top + view.height;
 
   if (!onScreen) workspace.centerOnBlock(block.id);
+}
+
+/**
+ * Selects one block and only that block.
+ *
+ * `select()` paints the highlight but does not take it off whatever held it —
+ * since Blockly 13 selection follows focus, so a block selected that way stays
+ * lit and every subject the conversation ever had ends up highlighted at once.
+ * Focusing the block is what actually moves the selection.
+ */
+export function selectOnly(block: Blockly.BlockSvg): void {
+  getFocusManager().focusNode(block);
 }

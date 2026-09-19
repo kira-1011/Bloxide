@@ -19,3 +19,14 @@ body,
   font-size: 9px;
   font-weight: 700;
 }
+
+/*
+ * A block stays the subject of the conversation after it is acted on, but the
+ * workspace does not hold DOM focus — the voice widget does — so Blockly
+ * downgrades that block to passive focus and drops the glow. Blockly styles
+ * passive focus only under keyboard navigation, which we do not turn on, so
+ * borrow its own glow for the state it is already tracking.
+ */
+.blocklyPath.blocklyPassiveFocus {
+  filter: var(--blocklySelectedGlowFilter);
+}
