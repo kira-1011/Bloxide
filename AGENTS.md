@@ -91,9 +91,9 @@ the bucket by hostname — `localhost` and `127.0.0.1` post to `development`,
 every other host posts to `production` — but `/api/sdk/init`, which is what a
 live session reads, serves `production` only. So a capability added while
 developing on localhost is invisible to the agent no matter how many times the
-dashboard says it synced. To exercise a new capability end to end, serve the
-dev server on the LAN address (`pnpm dev --host`) and open it by IP: the SDK
-then reports `production` and publishes where the agent will look.
+dashboard says it synced. To exercise a new capability end to end, serve the dev
+server on the LAN address (`pnpm dev --host`) and open it by IP: the SDK then
+reports `production` and publishes where the agent will look.
 
 This also means **the deployed site owns the production manifest**. Whoever
 loads it last overwrites it, so a capability that has merged but not deployed
