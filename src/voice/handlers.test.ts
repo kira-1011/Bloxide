@@ -1,9 +1,17 @@
 import * as Blockly from "blockly/core";
 import "blockly/blocks";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { setActiveWorkspace } from "@/blockly/activeWorkspace";
 import { initBlocklyLocale } from "@/blockly/locale";
-import { addBlock, VOICE_ACTIONS } from "@/voice/handlers";
+import {
+  addBlock,
+  attachBlock,
+  deleteBlock,
+  haltProgram,
+  startProgram,
+  VOICE_ACTIONS,
+} from "@/voice/handlers";
+import { getRunState, isProgramRunning } from "@/run/runner";
 import { BLOCK_TYPES } from "@/blockly/toolbox";
 
 initBlocklyLocale();
@@ -68,5 +76,92 @@ describe("addBlock", () => {
     setActiveWorkspace(null);
 
     await expect(addBlock({ type: "text_print" })).rejects.toThrow("No workspace is open yet.");
+  });
+});
+
+describe("attachBlock", () => {
+  it("puts a statement block inside a loop", async () => {
+    await addBlock({ type: "controls_repeat_ext" });
+    await addBlock({ type: "text_print" });
+
+    // No type given: the print block was just added, so it is the target.
+    const spoken = await attachBlock({ to: "repeat" });
+
+    const loop = workspace.getBlocksByType("controls_repeat_ext", false)[0];
+    expect(loop?.getChildren(false).map((child) => child.type)).toContain("text_print");
+    expect(spoken).toContain("inside");
+  });
+
+  it("puts a value block into an open socket", async () => {
+    await addBlock({ type: "text_print" });
+    await addBlock({ type: "text" });
+
+    await attachBlock({ to: "print" });
+
+    const print = workspace.getBlocksByType("text_print", false)[0];
+    expect(print?.getChildren(false).map((child) => child.type)).toContain("text");
+  });
+
+  it("says so when the blocks do not fit together", async () => {
+    await addBlock({ type: "text" });
+    await addBlock({ type: "math_number" });
+
+    const spoken = await attachBlock({ to: "text" });
+
+    expect(spoken).toContain("does not fit");
+  });
+
+  it("refuses to attach a block to itself", async () => {
+    await addBlock({ type: "controls_repeat_ext" });
+
+    const spoken = await attachBlock({ to: "repeat" });
+
+    expect(spoken).toBe("A block cannot be attached to itself.");
+  });
+});
+
+describe("deleteBlock", () => {
+  it("deletes the block just added when no type is given", async () => {
+    await addBlock({ type: "controls_repeat_ext" });
+
+    const spoken = deleteBlock({});
+
+    expect(workspace.getAllBlocks(false)).toHaveLength(0);
+    expect(spoken).toContain("controls_repeat_ext");
+  });
+
+  it("deletes a named block", async () => {
+    await addBlock({ type: "controls_repeat_ext" });
+    await addBlock({ type: "text_print" });
+
+    deleteBlock({ type: "repeat" });
+
+    expect(workspace.getAllBlocks(false).map((block) => block.type)).toEqual(["text_print"]);
+  });
+
+  it("says so when there is nothing to delete", () => {
+    expect(deleteBlock({ type: "repeat" })).toBe("I cannot find a repeat block.");
+  });
+});
+
+describe("run and stop", () => {
+  it("refuses to run an empty workspace", () => {
+    expect(startProgram()).toBe("There are no blocks to run yet.");
+  });
+
+  it("starts the program without waiting for it to finish", async () => {
+    await addBlock({ type: "text_print" });
+
+    const spoken = startProgram();
+
+    expect(spoken).toBe("Running your program");
+    // The handler returns immediately; the run is still in flight.
+    expect(isProgramRunning()).toBe(true);
+    await vi.waitFor(() => expect(isProgramRunning()).toBe(false));
+    expect(getRunState().output).toHaveLength(1);
+  });
+
+  it("says so when stopping with nothing running", () => {
+    expect(haltProgram()).toBe("Nothing is running.");
   });
 });

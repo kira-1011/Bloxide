@@ -1,7 +1,13 @@
 import * as Blockly from "blockly/core";
 import "blockly/blocks";
-import { afterEach, describe, expect, it, vi } from "vitest";
-import { isProgramRunning, runProgram, stopProgram } from "@/run/runner";
+import { afterEach, describe, expect, it } from "vitest";
+import {
+  getRunState,
+  isProgramRunning,
+  runProgram,
+  stopProgram,
+  subscribeToRun,
+} from "@/run/runner";
 import { initBlocklyLocale } from "@/blockly/locale";
 
 // Block definitions interpolate Blockly.Msg; without messages newBlock throws.
@@ -37,21 +43,18 @@ afterEach(() => {
 
 describe("runProgram", () => {
   it("prints to the output rather than a browser dialog", async () => {
-    const onOutput = vi.fn();
     const workspace = workspaceWith((ws) => printBlock(ws, "hello"));
 
-    await runProgram(workspace, { onOutput });
+    await runProgram(workspace);
 
     // window.alert cannot be dismissed by voice, so text_print must not use it.
-    expect(onOutput).toHaveBeenCalledWith("hello");
+    expect(getRunState().output.map((line) => line.text)).toEqual(["hello"]);
   });
 
   it("runs an empty workspace without complaint", async () => {
-    const onOutput = vi.fn();
+    await runProgram(new Blockly.Workspace());
 
-    await runProgram(new Blockly.Workspace(), { onOutput });
-
-    expect(onOutput).not.toHaveBeenCalled();
+    expect(getRunState().output).toEqual([]);
     expect(isProgramRunning()).toBe(false);
   });
 
@@ -65,18 +68,15 @@ describe("runProgram", () => {
       connect(loop.getInput("DO")?.connection, print.previousConnection);
     });
 
-    let printed = 0;
-    const running = runProgram(workspace, {
-      onOutput: () => {
-        printed += 1;
-        if (printed === 3) stopProgram();
-      },
+    const unsubscribe = subscribeToRun(() => {
+      if (getRunState().output.length === 3) stopProgram();
     });
 
-    await running;
+    await runProgram(workspace);
+    unsubscribe();
 
     // Stop must actually halt it, not let 1000 iterations finish.
-    expect(printed).toBeLessThan(1000);
+    expect(getRunState().output.length).toBeLessThan(1000);
     expect(isProgramRunning()).toBe(false);
   });
 
@@ -91,11 +91,12 @@ describe("runProgram", () => {
     });
 
     let seenRunning = false;
-    await runProgram(workspace, {
-      onOutput: () => {
-        seenRunning ||= isProgramRunning();
-      },
+    const unsubscribe = subscribeToRun(() => {
+      seenRunning ||= isProgramRunning();
     });
+
+    await runProgram(workspace);
+    unsubscribe();
 
     expect(seenRunning).toBe(true);
     expect(isProgramRunning()).toBe(false);

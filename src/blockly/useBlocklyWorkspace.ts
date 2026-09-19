@@ -29,7 +29,7 @@ export function useBlocklyWorkspace({
   const workspaceRef = useRef<Blockly.WorkspaceSvg | null>(null);
 
   // Keeps onChange out of the effect deps: an inline arrow would otherwise
-  // re-inject on every render and throw away the child's program.
+  // re-inject on every render and throw away the program.
   const handleChange = useEffectEvent((workspace: Blockly.WorkspaceSvg) => {
     onChange?.(workspace);
   });

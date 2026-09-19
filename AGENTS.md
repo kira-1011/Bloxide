@@ -123,7 +123,7 @@ Write minimal comments. Code should be self-documenting.
 
 ## Skills
 
-Three installed skills carry rules this project follows. Load the relevant one
+Four installed skills carry rules this project follows. Load the relevant one
 before working in its area, not after.
 
 - **`vercel-react-best-practices`** — before writing or changing any React
@@ -142,6 +142,9 @@ before working in its area, not after.
   three directories.
 - **`changelog-generator`** — whenever `CHANGELOG.md` is updated. See Changelog
   below.
+- **`typescript-advanced-types`** — before writing a type that is more than a
+  shape: generics, conditional or mapped types, template literals, narrowing
+  helpers, or anything derived from another type. See Type safety below.
 
 All three are committed to the repo under `.agents/skills/`, so a clone has them
 without anyone installing anything. `skills-lock.json` pins the versions. The
@@ -154,10 +157,32 @@ To update a skill, re-run its install from the repo root and commit the diff:
 npx skills add vercel-labs/agent-skills@vercel-react-best-practices -y
 npx skills add mattpocock/skills@improve-codebase-architecture -y
 npx skills add https://github.com/composiohq/awesome-claude-skills --skill changelog-generator
+npx skills add wshobson/agents --skill typescript-advanced-types
 ```
 
 Prefer them over improvising a style: a rule from a skill beats a preference
 argued in review.
+
+## Type safety
+
+**Types must hold end to end, from the data's source to where it is used.** A
+type that stops at a module boundary is a type that lies at the next one.
+
+- **Derive, never duplicate.** One list is the source: the toolbox defines the
+  blocks, and `BlockType`, the agent's enum and the spoken vocabulary are all
+  derived from it. A second hand-kept list drifts, and the drift is silent.
+- **Parse at the boundary, then narrow.** Anything from outside the program —
+  a model's tool call, `localStorage`, the network — arrives as `unknown` or
+  `string` no matter what the signature claims. Validate it into a real type at
+  the edge with a type guard, and let everything inside rely on the narrowed
+  type. `addBlock` takes `string` and narrows through `resolveBlockType`
+  precisely because a model can send anything.
+- **A cast is a defect.** `as` and `as unknown as` silence the compiler without
+  changing the value; reach for a guard, a `satisfies`, or a better shape
+  instead. Where a third-party signature forces one, say why in a comment.
+- **`as const satisfies`** keeps literal types while still checking the shape.
+  It is what makes a config object usable as a type.
+- No `any`. No `@ts-expect-error` without the reason on the line above.
 
 ## Changelog
 

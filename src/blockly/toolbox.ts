@@ -3,7 +3,7 @@ import type * as Blockly from "blockly/core";
 interface BlockEntry {
   kind: "block";
   type: string;
-  /** What a child calls this block. Blockly's type ids are not sayable. */
+  /** Spoken names for this block. Blockly's type ids are not sayable. */
   say: readonly string[];
 }
 
@@ -89,7 +89,7 @@ function normalise(value: string): string {
 /**
  * Resolves whatever the agent sent to a type we ship, or null.
  *
- * The enum steers the model towards type ids but enforces nothing, so a child's
+ * The enum steers the model towards type ids but enforces nothing, so a spoken
  * word still arrives sometimes. Rejecting "repeat" would dead-end the one
  * sentence the README teaches.
  */
