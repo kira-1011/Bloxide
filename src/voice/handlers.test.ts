@@ -43,12 +43,24 @@ describe("addBlock", () => {
     expect(workspace.getAllBlocks(false)).toHaveLength(0);
   });
 
-  it("says so instead of throwing when the type is not a block", async () => {
-    // What a child actually says. The model passes the word through, and
-    // Blockly's id for this block is controls_repeat_ext.
-    const spoken = await addBlock({ type: "repeat" });
+  it("accepts what a child says, not just the type id", async () => {
+    // The enum steers the model to type ids but enforces nothing, so "repeat"
+    // still arrives sometimes and must not dead-end.
+    await addBlock({ type: "repeat" });
 
-    expect(spoken).toBe("I do not know a block called repeat.");
+    expect(workspace.getAllBlocks(false)[0]?.type).toBe("controls_repeat_ext");
+  });
+
+  it('ignores casing and a trailing "block"', async () => {
+    await addBlock({ type: "Print Block" });
+
+    expect(workspace.getAllBlocks(false)[0]?.type).toBe("text_print");
+  });
+
+  it("says so instead of throwing when nothing matches", async () => {
+    const spoken = await addBlock({ type: "unicorn" });
+
+    expect(spoken).toBe("I do not know a block called unicorn.");
     expect(workspace.getAllBlocks(false)).toHaveLength(0);
   });
 

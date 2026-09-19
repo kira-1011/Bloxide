@@ -1,6 +1,6 @@
 import type { VoxideActionConfig } from "@voxide/react";
 import { getActiveWorkspace } from "@/blockly/activeWorkspace";
-import { BLOCK_TYPES, isBlockType } from "@/blockly/toolbox";
+import { BLOCK_TYPES, resolveBlockType } from "@/blockly/toolbox";
 
 // Every capability the agent can invoke. One block, one connection or one value
 // per utterance, and never `dangerous: true` — it asks for a click to confirm.
@@ -13,12 +13,13 @@ export async function addBlock({ type }: { type: string }): Promise<string> {
 
   // Against our toolbox, not Blockly's registry: the enum only steers the
   // model, and the registry would accept hundreds of blocks we do not ship.
-  if (!isBlockType(type)) {
+  const resolved = resolveBlockType(type);
+  if (!resolved) {
     return `I do not know a block called ${type}.`;
   }
 
   const { BlockSvg } = await import("blockly/core");
-  const block = workspace.newBlock(type);
+  const block = workspace.newBlock(resolved);
   // A headless workspace has no SVG to build; a rendered one needs both calls
   // or the block exists in the model and never appears on screen.
   if (block instanceof BlockSvg) {
@@ -26,7 +27,7 @@ export async function addBlock({ type }: { type: string }): Promise<string> {
     block.render();
   }
 
-  return `Added a ${type} block`;
+  return `Added a ${resolved} block`;
 }
 
 export const VOICE_ACTIONS: Record<string, VoxideActionConfig> = {
