@@ -26,7 +26,7 @@ These are product decisions, not preferences. Do not relax them.
 3. **No mouse-only paths.** If an action can only be done by clicking, it is a
    bug. Keyboard and pointer input stay available, but voice must reach
    everything.
-4. **Small on purpose.** One stage, one sprite, ~15 blocks. A reliable small
+4. **Small on purpose.** One stage, one sprite, a small block set. A reliable small
    surface beats a broad unreliable one.
 
 ## Stack
