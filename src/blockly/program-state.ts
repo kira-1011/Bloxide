@@ -64,7 +64,9 @@ export function describeProgram(): ProgramSnapshot {
 
   return {
     running: isProgramRunning(),
-    blockCount: all.length,
+    // Shadows are the defaults sitting in a block's slots, not blocks in their
+    // own right: counting them would report a program three times its size.
+    blockCount: all.filter((block) => !block.isShadow()).length,
     // Only what is actually badged on screen: a number the speaker cannot see
     // is a number they cannot say.
     numbered: all.flatMap((block) => {

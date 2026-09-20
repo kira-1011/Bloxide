@@ -1,5 +1,6 @@
 import * as Blockly from "blockly/core";
 import "blockly/blocks";
+import "@/blocks/sprite-blocks";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { setActiveWorkspace } from "@/blockly/active-workspace";
 import { initBlocklyLocale } from "@/blockly/locale";
@@ -65,6 +66,24 @@ describe("describeProgram", () => {
     expect(blockCount).toBe(2);
     expect(stacks).toHaveLength(2);
     expect(stacks.map((stack) => stack.type)).toContain("text_print");
+  });
+
+  it("counts the blocks someone put there, not the shadows in their slots", () => {
+    // A go to carries two shadows; counting them would report three blocks for
+    // one, and the agent would say so out loud.
+    Blockly.serialization.blocks.append(
+      {
+        type: "bloxide_go_to",
+        inputs: {
+          X: { shadow: { type: "math_number", fields: { NUM: 0 } } },
+          Y: { shadow: { type: "math_number", fields: { NUM: 0 } } },
+        },
+      },
+      workspace,
+    );
+
+    expect(workspace.getAllBlocks(false)).toHaveLength(3);
+    expect(describeProgram().blockCount).toBe(1);
   });
 
   it("keeps nesting, because that is what the agent has to reason about", () => {
