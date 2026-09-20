@@ -4,7 +4,7 @@ import { getActiveWorkspace } from "@/blockly/active-workspace";
 import { setFieldValue } from "@/blockly/block-fields";
 import { numberBlocks, revealBlock, selectOnly } from "@/blockly/block-view";
 import { forgetBlock, rememberBlock, resolveBlock } from "@/blockly/block-reference";
-import { BLOCK_TYPES, resolveBlockType, slotDefaults } from "@/blockly/toolbox";
+import { BLOCK_TYPES, resolveBlockType, slotDefaults, spokenName } from "@/blockly/toolbox";
 import { isProgramRunning, runProgram, stopProgram } from "@/run/runner";
 
 // Every capability the agent can invoke. One block, one connection or one value
@@ -54,7 +54,7 @@ export async function addBlock({ type }: { type: string }): Promise<string> {
   // renumber until after this returns and the next spoken number would miss.
   numberBlocks(workspace);
 
-  return `Added a ${resolved} block`;
+  return `Added a ${spokenName(resolved)} block`;
 }
 
 /**
@@ -115,7 +115,7 @@ export async function attachBlock({
     for (const connection of openInputs(ConnectionType.INPUT_VALUE)) {
       if (connection?.connect(child.outputConnection)) {
         numberBlocks(workspace);
-        return `Put it in the ${parent.type} block`;
+        return `Put it in the ${spokenName(parent.type)} block`;
       }
     }
   }
@@ -125,18 +125,18 @@ export async function attachBlock({
     for (const connection of openInputs(ConnectionType.NEXT_STATEMENT)) {
       if (connection?.connect(child.previousConnection)) {
         numberBlocks(workspace);
-        return `Put it inside the ${parent.type} block`;
+        return `Put it inside the ${spokenName(parent.type)} block`;
       }
     }
     if (parent.nextConnection && !parent.nextConnection.targetConnection) {
       if (parent.nextConnection.connect(child.previousConnection)) {
         numberBlocks(workspace);
-        return `Put it under the ${parent.type} block`;
+        return `Put it under the ${spokenName(parent.type)} block`;
       }
     }
   }
 
-  return `A ${child.type} block does not fit there.`;
+  return `A ${spokenName(child.type)} block does not fit there.`;
 }
 
 /**
@@ -182,7 +182,7 @@ export function deleteBlock({ type, number }: { type?: string; number?: number }
   const block = resolveBlock(workspace, type, number !== undefined ? { number } : {});
   if (!block) return describeMiss(type, number);
 
-  const removed = block.type;
+  const removed = spokenName(block.type);
   forgetBlock(block);
   // healStack: what was under it reconnects instead of being orphaned.
   block.dispose(true);

@@ -7,10 +7,25 @@ just developers — see the Changelog section of AGENTS.md.
 
 ### Added
 
+- **Blocks that do something.** The palette is now Bloxide's own twelve —
+  move, turn right, turn left, go to x y, say, say for secs, change size by,
+  hide, show, wait, repeat and forever — in the four colours of the design:
+  movement, say, look, control. Say "add a move block", "make it fifty steps",
+  "run it", and the sprite moves. Blockly's starter Logic, Math and Text
+  blocks are gone; they were scaffolding.
+- **The sprite speaks instead of a print panel.** A say block puts words in a
+  bubble on the stage, where the child is already looking, rather than in a
+  list of output underneath.
+- **No hat block.** A program runs top to bottom when the child says "run it".
+  Every block that starts a program in Scratch is named after a mouse click.
+
 - **No more holes to fill.** A block asked for by voice now arrives with its
   values already in it — a print block used to appear with an empty socket, and
   the only way to fill a socket is to drag a block into it. Saying a new value
   over the one that is there works instead.
+- **Every word means one block.** "Turn right" and "turn left" are separate
+  things to say, because a bare "turn" would have been answered with whichever
+  block came first — confidently, and half the time wrongly.
 - **Blocks that hold two values.** Where a block has more than one value the
   assistant asks which — "say which one: x or y" — rather than guessing and
   changing the wrong one. A block with a single value is unchanged: no naming

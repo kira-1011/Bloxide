@@ -1,11 +1,15 @@
 import type * as Blockly from "blockly/core";
-import { javascriptGenerator, Order } from "blockly/javascript";
+import { javascriptGenerator } from "blockly/javascript";
 import "@/blocks/sprite-generators";
 import { createStore } from "zustand/vanilla";
 import { ProgramStopped } from "@/run/program-stopped";
 import { createSpriteApi, type RunSession } from "@/sprite/sprite-api";
 import { resetSprite, setSaying } from "@/sprite/sprite-store";
 
+/**
+ * A line of program output. Nothing writes one now that the sprite speaks
+ * instead of printing; the shape stays until the panel reading it goes.
+ */
 export interface OutputLine {
   /** Printing the same text twice is normal, so lines carry an id. */
   readonly id: number;
@@ -40,12 +44,6 @@ export const subscribeToRun = store.subscribe;
 
 /** Stable between changes, as the React binding requires. */
 export const getRunState = (): RunState => store.getState();
-
-// window.alert cannot be dismissed by voice.
-javascriptGenerator.forBlock["text_print"] = (block, generator) => {
-  const value = generator.valueToCode(block, "TEXT", Order.NONE) || '""';
-  return `print(${value});\n`;
-};
 
 export function isProgramRunning(): boolean {
   return currentRun !== null;
@@ -85,13 +83,6 @@ export async function runProgram(workspace: Blockly.Workspace): Promise<void> {
     await new Promise((resolve) => setTimeout(resolve, 0));
     if (run.cancelled) throw new ProgramStopped();
   };
-  const print = (value: unknown): void => {
-    if (currentRun !== run) return;
-    store.setState(({ output }) => ({
-      output: [...output, { id: output.length, text: String(value) }],
-    }));
-  };
-
   const session: RunSession = {
     // Unlike print, which returns quietly, this throws: a replaced run has to
     // stop where it stands rather than play out its whole body against the
@@ -120,18 +111,12 @@ export async function runProgram(workspace: Blockly.Workspace): Promise<void> {
   };
 
   try {
-    const program = new Function(
-      "__tick",
-      "print",
-      "__sprite",
-      `return (async () => {\n${code}\n})();`,
-    ) as (
+    const program = new Function("__tick", "__sprite", `return (async () => {\n${code}\n})();`) as (
       tick: () => Promise<void>,
-      print: (value: unknown) => void,
       sprite: ReturnType<typeof createSpriteApi>,
     ) => Promise<void>;
 
-    await program(tick, print, createSpriteApi(session));
+    await program(tick, createSpriteApi(session));
   } catch (error) {
     if (!(error instanceof ProgramStopped) && currentRun === run) {
       store.setState({ error: error instanceof Error ? error.message : String(error) });

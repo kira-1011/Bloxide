@@ -22,7 +22,7 @@ describe("editableField", () => {
   });
 
   it("finds nothing on a block that holds no value", () => {
-    expect(editableField(workspace.newBlock("text_print"))).toBeNull();
+    expect(editableField(workspace.newBlock("bloxide_say"))).toBeNull();
   });
 
   it("every block we ship holds at most one value", () => {
@@ -60,6 +60,9 @@ describe("valueSlots", () => {
     expect(valueSlots(goTo).map((slot) => slot.name)).toEqual(["x", "y"]);
   });
 
+  // Every block we ship keeps its values in slots, so the cases below reach
+  // for Blockly's own inline-field blocks: setFieldValue still has to handle
+  // one, and a field is where a shadow keeps its value anyway.
   it("names a block's own field after the field", () => {
     expect(valueSlots(workspace.newBlock("controls_repeat")).map((slot) => slot.name)).toEqual([
       "times",
@@ -192,7 +195,7 @@ describe("setFieldValue", () => {
   });
 
   it("says so when the block holds no value at all", () => {
-    const change = setFieldValue(workspace.newBlock("text_print"), "4");
+    const change = setFieldValue(workspace.newBlock("bloxide_hide"), "4");
 
     expect(change.ok).toBe(false);
     expect(change.spoken).toBe("That block has no value to change.");

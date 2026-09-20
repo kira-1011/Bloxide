@@ -27,64 +27,102 @@ interface Category {
 
 // `as const` is what gives BlockType its literal union; `satisfies` keeps the
 // shape checked without widening it back to string.
+const numberSlot = (value: number) => ({ shadow: { type: "math_number", fields: { NUM: value } } });
+const textSlot = (value: string) => ({ shadow: { type: "text", fields: { TEXT: value } } });
+
+// `as const` is what gives BlockType its literal union; `satisfies` keeps the
+// shape checked without widening it back to string.
+//
+// The four categories, their order and their default values are DESIGN.md's.
+// The first spoken name of each block is the one said back in a confirmation.
 const CATEGORIES = [
   {
     kind: "category",
-    name: "Logic",
-    categorystyle: "logic_category",
+    name: "Movement",
+    categorystyle: "movement_category",
     contents: [
-      { kind: "block", type: "controls_if", say: ["if", "if then"] },
       {
         kind: "block",
-        type: "logic_compare",
-        say: ["compare", "comparison", "equals"],
-        inputs: {
-          A: { shadow: { type: "math_number", fields: { NUM: 1 } } },
-          B: { shadow: { type: "math_number", fields: { NUM: 1 } } },
-        },
+        type: "bloxide_move",
+        say: ["move", "move steps"],
+        inputs: { STEPS: numberSlot(10) },
+      },
+      {
+        kind: "block",
+        type: "bloxide_turn_right",
+        // Never a bare "turn": it would resolve to whichever turn block came
+        // first and be confirmed as confidently as a right answer.
+        say: ["turn right", "turn right degrees"],
+        inputs: { DEGREES: numberSlot(15) },
+      },
+      {
+        kind: "block",
+        type: "bloxide_turn_left",
+        say: ["turn left", "turn left degrees"],
+        inputs: { DEGREES: numberSlot(15) },
+      },
+      {
+        kind: "block",
+        type: "bloxide_go_to",
+        say: ["go to", "go to x y"],
+        inputs: { X: numberSlot(0), Y: numberSlot(0) },
       },
     ],
   },
   {
     kind: "category",
-    name: "Loops",
-    categorystyle: "loop_category",
-    contents: [{ kind: "block", type: "controls_repeat", say: ["repeat", "loop"] }],
-  },
-  {
-    kind: "category",
-    name: "Math",
-    categorystyle: "math_category",
+    name: "Say",
+    categorystyle: "say_category",
     contents: [
-      { kind: "block", type: "math_number", say: ["number"] },
       {
         kind: "block",
-        type: "math_arithmetic",
-        say: ["math", "arithmetic", "sum"],
-        inputs: {
-          A: { shadow: { type: "math_number", fields: { NUM: 1 } } },
-          B: { shadow: { type: "math_number", fields: { NUM: 1 } } },
-        },
+        type: "bloxide_say_for",
+        say: ["say for", "say for secs", "say for seconds"],
+        inputs: { TEXT: textSlot("Hello!"), SECONDS: numberSlot(2) },
       },
+      { kind: "block", type: "bloxide_say", say: ["say"], inputs: { TEXT: textSlot("Hello!") } },
     ],
   },
   {
     kind: "category",
-    name: "Text",
-    categorystyle: "text_category",
+    name: "Look",
+    categorystyle: "look_category",
     contents: [
-      { kind: "block", type: "text", say: ["text", "words", "string"] },
       {
         kind: "block",
-        type: "text_print",
-        say: ["print", "say", "show"],
-        inputs: { TEXT: { shadow: { type: "text", fields: { TEXT: "" } } } },
+        type: "bloxide_change_size",
+        say: ["change size", "change size by"],
+        inputs: { CHANGE: numberSlot(10) },
       },
+      { kind: "block", type: "bloxide_hide", say: ["hide"] },
+      { kind: "block", type: "bloxide_show", say: ["show"] },
+    ],
+  },
+  {
+    kind: "category",
+    name: "Control",
+    categorystyle: "control_category",
+    contents: [
+      {
+        kind: "block",
+        type: "bloxide_wait",
+        say: ["wait", "wait seconds"],
+        inputs: { SECONDS: numberSlot(1) },
+      },
+      // Blockly's own repeat, so its generator handles the loop trap. The type
+      // id is never spoken.
+      {
+        kind: "block",
+        type: "controls_repeat_ext",
+        say: ["repeat", "loop"],
+        inputs: { TIMES: numberSlot(10) },
+      },
+      { kind: "block", type: "bloxide_forever", say: ["forever"] },
     ],
   },
 ] as const satisfies readonly Category[];
 
-/** Starter toolbox built from Blockly's own library blocks. */
+/** The blocks a child may ask for, in the order DESIGN.md lists them. */
 export const TOOLBOX: Blockly.utils.toolbox.ToolboxDefinition = {
   kind: "categoryToolbox",
   // Copied because Blockly wants a mutable array and CATEGORIES is frozen.
@@ -138,6 +176,17 @@ function normalise(value: string): string {
 /** The shadow defaults for a type, for whoever is making the block. */
 export function slotDefaults(type: BlockType): SlotDefaults | undefined {
   return ENTRIES.find((entry) => entry.type === type)?.inputs;
+}
+
+/**
+ * What to call a block out loud.
+ *
+ * The first spoken name, not the type id: "Added a bloxide_move block" is not
+ * a sentence to say to a child. Derived from the same list the agent picks
+ * from, so a confirmation can never name something that cannot be asked for.
+ */
+export function spokenName(type: string): string {
+  return ENTRIES.find((entry) => entry.type === type)?.say[0] ?? type;
 }
 
 export function resolveBlockType(value: string): BlockType | null {
