@@ -58,14 +58,14 @@ describe("describeProgram", () => {
   });
 
   it("counts every block but sends one entry per stack", () => {
-    workspace.newBlock("controls_repeat");
-    workspace.newBlock("text_print");
+    workspace.newBlock("controls_repeat_ext");
+    workspace.newBlock("bloxide_say");
 
     const { blockCount, stacks } = describeProgram();
 
     expect(blockCount).toBe(2);
     expect(stacks).toHaveLength(2);
-    expect(stacks.map((stack) => stack.type)).toContain("text_print");
+    expect(stacks.map((stack) => stack.type)).toContain("bloxide_say");
   });
 
   it("counts the blocks someone put there, not the shadows in their slots", () => {
@@ -87,21 +87,21 @@ describe("describeProgram", () => {
   });
 
   it("keeps nesting, because that is what the agent has to reason about", () => {
-    const loop = workspace.newBlock("controls_repeat");
-    const print = workspace.newBlock("text_print");
+    const loop = workspace.newBlock("controls_repeat_ext");
+    const say = workspace.newBlock("bloxide_say");
     const input = loop.getInput("DO")?.connection;
-    if (!input || !print.previousConnection) throw new Error("block shape changed");
-    input.connect(print.previousConnection);
+    if (!input || !say.previousConnection) throw new Error("block shape changed");
+    input.connect(say.previousConnection);
 
     const { stacks } = describeProgram();
 
     expect(stacks).toHaveLength(1);
-    expect(stacks[0]?.type).toBe("controls_repeat");
-    expect(stacks[0]?.inputs?.["DO"]?.block?.type).toBe("text_print");
+    expect(stacks[0]?.type).toBe("controls_repeat_ext");
+    expect(stacks[0]?.inputs?.["DO"]?.block?.type).toBe("bloxide_say");
   });
 
   it("leaves out ids and coordinates", () => {
-    workspace.newBlock("text_print");
+    workspace.newBlock("bloxide_say");
 
     const [stack] = describeProgram().stacks;
 
