@@ -260,6 +260,35 @@ describe("deleting many at once", () => {
     expect(spoken).toContain("1 block");
   });
 
+  it("refuses a list it cannot read rather than deleting the wrong blocks", async () => {
+    await addBlock({ type: "move" });
+    await addBlock({ type: "repeat" });
+
+    // "1.5" read loosely is blocks 1 and 5; "-1" is block 1. A wrong deletion
+    // is not something a child can undo by speaking.
+    for (const numbers of ["1.5", "-1", "the first one", "1, banana"]) {
+      expect(deleteBlocks({ numbers }), numbers).toBe("I am not sure which blocks you mean.");
+    }
+
+    expect(ownBlocks()).toHaveLength(2);
+  });
+
+  it("reads the separators a sentence actually uses", async () => {
+    await addBlock({ type: "move" });
+    await addBlock({ type: "repeat" });
+    await addBlock({ type: "say" });
+
+    expect(deleteBlocks({ numbers: "1 and 3" })).toContain("2 blocks");
+    expect(ownBlocks()).toHaveLength(1);
+  });
+
+  it("takes the word for every block, however it is phrased", async () => {
+    await addBlock({ type: "move" });
+
+    expect(deleteBlocks({ numbers: "all of them" })).toContain("empty");
+    expect(ownBlocks()).toHaveLength(0);
+  });
+
   it("says so rather than claiming a change when there is nothing to delete", () => {
     expect(deleteBlocks({ numbers: "all" })).toBe("There is nothing to delete.");
   });

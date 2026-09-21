@@ -203,10 +203,22 @@ export function setParam({
 type Wanted = { readonly kind: "all" } | { readonly kind: "list"; readonly numbers: number[] };
 
 function parseWanted(numbers: string): Wanted | null {
-  if (/\b(all|every|everything)\b/i.test(numbers)) return { kind: "all" };
+  const said = numbers.trim().toLowerCase();
+  if (said === "") return null;
 
-  const found = numbers.match(/\d+/g)?.map(Number) ?? [];
-  return found.length > 0 ? { kind: "list", numbers: found } : null;
+  // "all", "all of them", "every block" — the word, with no digits to contradict it.
+  if (!/\d/.test(said) && /\b(all|every|everything)\b/.test(said)) return { kind: "all" };
+
+  // Otherwise every piece has to be a plain whole number. Pulling the digits out
+  // of whatever arrives would read "1.5" as blocks 1 and 5 and delete them both,
+  // and a wrong deletion is not something a child can undo by speaking.
+  const tokens = said.split(/(?:,|\band\b|\s)+/).filter(Boolean);
+  if (tokens.length === 0 || tokens.some((token) => !/^\d+$/.test(token))) return null;
+
+  const parsed = tokens.map(Number);
+  return parsed.every((n) => Number.isSafeInteger(n) && n > 0)
+    ? { kind: "list", numbers: parsed }
+    : null;
 }
 
 /** Counted after the fact: what the workspace holds, not what we meant to remove. */
