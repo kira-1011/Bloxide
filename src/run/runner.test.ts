@@ -49,6 +49,13 @@ function repeatBlock(workspace: Blockly.Workspace, times: number, body: Blockly.
   return loop;
 }
 
+/** How long a program takes to run, start to finish. */
+async function timeOf(workspace: Blockly.Workspace): Promise<number> {
+  const started = Date.now();
+  await runProgram(workspace);
+  return Date.now() - started;
+}
+
 afterEach(() => {
   stopProgram();
   resetSprite();
@@ -153,6 +160,48 @@ describe("runProgram", () => {
     await running;
 
     // A bare setTimeout would have kept the program alive for the full minute.
+    expect(isProgramRunning()).toBe(false);
+  });
+
+  it("gives a loop a frame each time round, so it can be watched", async () => {
+    // Scratch runs at 30 a second and yields once an iteration. Without that
+    // pacing, four turns round a loop finish inside a single frame and the
+    // sprite simply appears somewhere else.
+    //
+    // Measured against the same twenty moves written out in a row, which carry
+    // no loop and so no frames: whatever this machine costs per move cancels,
+    // and what is left is the waiting.
+    const runs = 20;
+    const straight = await timeOf(
+      workspaceWith((ws) => {
+        let previous = moveBlock(ws, 1);
+        for (let i = 1; i < runs; i++) {
+          const next = moveBlock(ws, 1);
+          connect(previous.nextConnection, next.previousConnection);
+          previous = next;
+        }
+      }),
+    );
+    const looped = await timeOf(workspaceWith((ws) => repeatBlock(ws, runs, moveBlock(ws, 1))));
+
+    // Twenty frames at 30fps is ~666ms. Half of that is a wide margin for a
+    // slow machine while still being far more than no pacing at all.
+    // Twenty frames at 30fps is ~666ms, and it measures around 800 here. With
+    // no pacing the same comparison is about 260, so 500 sits clear of both.
+    expect(looped - straight).toBeGreaterThan(500);
+  });
+
+  it("still stops at once, however slowly the loop is paced", async () => {
+    const workspace = workspaceWith((ws) => repeatBlock(ws, 1000, moveBlock(ws, 1)));
+
+    const running = runProgram(workspace);
+    await new Promise((resolve) => setTimeout(resolve, 60));
+    const started = Date.now();
+    stopProgram();
+    await running;
+
+    // A frame-paced loop must not mean a frame-long wait for Stop.
+    expect(Date.now() - started).toBeLessThan(40);
     expect(isProgramRunning()).toBe(false);
   });
 

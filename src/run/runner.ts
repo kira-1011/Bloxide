@@ -22,6 +22,9 @@ interface Run {
   readonly aborts: Set<(reason: unknown) => void>;
 }
 
+/** Scratch's frame: 30 a second, and a loop yields once each time round. */
+const FRAME = 1000 / 30;
+
 // A handle the cancellation guards compare by identity, not reactive state.
 let currentRun: Run | null = null;
 
@@ -60,13 +63,6 @@ export async function runProgram(workspace: Blockly.Workspace): Promise<void> {
   javascriptGenerator.INFINITE_LOOP_TRAP = "await __tick();\n";
   const code = javascriptGenerator.workspaceToCode(workspace);
 
-  // Checked on both sides of the yield: a second run can start, and replace
-  // currentRun, while this one is parked on the timer.
-  const tick = async (): Promise<void> => {
-    if (run.cancelled) throw new ProgramStopped();
-    await new Promise((resolve) => setTimeout(resolve, 0));
-    if (run.cancelled) throw new ProgramStopped();
-  };
   const session: RunSession = {
     // Unlike print, which returns quietly, this throws: a replaced run has to
     // stop where it stands rather than play out its whole body against the
@@ -92,6 +88,23 @@ export async function runProgram(workspace: Blockly.Workspace): Promise<void> {
         run.aborts.add(abort);
       });
     },
+  };
+
+  /**
+   * One frame per time round a loop, which is what makes a program watchable.
+   *
+   * Scratch runs at 30 frames a second and a loop yields once an iteration, so
+   * a repeat takes about a thirtieth of a second a time and a child can watch
+   * the sprite go. Yielding straight back instead finishes a four-times loop in
+   * under a frame: the sprite is simply somewhere else, and nothing was shown.
+   *
+   * Straight-line blocks still run inside one frame, as they do in Scratch.
+   * Going through `sleep` rather than a bare timer keeps Stop instant.
+   */
+  const tick = async (): Promise<void> => {
+    session.guard();
+    await session.sleep(FRAME);
+    session.guard();
   };
 
   try {
