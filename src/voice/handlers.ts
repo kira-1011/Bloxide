@@ -6,6 +6,7 @@ import { getActiveWorkspace } from "@/blockly/active-workspace";
 import { setFieldValue } from "@/blockly/block-fields";
 import { getBlockNumber, numberBlocks, revealBlock, selectOnly } from "@/blockly/block-view";
 import {
+  findBlockByNumber,
   forgetBlock,
   forgetEveryBlock,
   rememberBlock,
@@ -192,58 +193,58 @@ export function setParam({
   return andItsNumber(change.spoken, block);
 }
 
+/**
+ * Which blocks a sentence meant: one, a handful, or the lot.
+ *
+ * The agent sends a string because the param schema carries only strings and
+ * numbers — no arrays, no booleans — so it is parsed into a real shape here
+ * rather than being read as a string everywhere downstream.
+ */
+type Wanted = { readonly kind: "all" } | { readonly kind: "list"; readonly numbers: number[] };
+
+function parseWanted(numbers: string): Wanted | null {
+  if (/\b(all|every|everything)\b/i.test(numbers)) return { kind: "all" };
+
+  const found = numbers.match(/\d+/g)?.map(Number) ?? [];
+  return found.length > 0 ? { kind: "list", numbers: found } : null;
+}
+
 /** Counted after the fact: what the workspace holds, not what we meant to remove. */
 function ownBlocks(workspace: Blockly.Workspace): Blockly.Block[] {
   return workspace.getAllBlocks(false).filter((block) => !block.isShadow());
-}
-
-/**
- * Clears the workspace, or every block of one kind.
- *
- * Starting over has to be sayable. Emptying the workspace by hand means
- * dragging each block to the bin one at a time, which is the thing our users
- * cannot do — without this, the only way out of a tangled program is a mouse.
- */
-export function deleteAllBlocks({ type }: { type?: string }): string {
-  const workspace = getActiveWorkspace();
-  const before = ownBlocks(workspace);
-  if (before.length === 0) return "There is nothing to delete.";
-
-  if (type === undefined) {
-    // Blockly's own clear, rather than disposing block by block: it takes the
-    // undo stack and everything hanging off the workspace with it.
-    workspace.clear();
-    forgetEveryBlock();
-    numberBlocks(workspace);
-    return `Deleted ${countOf(before.length)}. The workspace is empty.`;
-  }
-
-  const resolved = resolveBlockType(type);
-  if (!resolved) return `I do not know a block called ${type}.`;
-
-  const matches = before.filter((block) => block.type === resolved);
-  if (matches.length === 0) return `I cannot find a ${spokenName(resolved)} block.`;
-
-  for (const block of matches) {
-    forgetBlock(block);
-    // healStack, so blocks under a deleted one join up rather than orphaning.
-    block.dispose(true);
-  }
-  numberBlocks(workspace);
-
-  const left = ownBlocks(workspace).length;
-  const spoken = `Deleted ${countOf(matches.length)}, all of them ${spokenName(resolved)}`;
-  return left === 0
-    ? `${spoken}. The workspace is empty.`
-    : `${spoken}. ${countOf(left)} left, numbered from one.`;
 }
 
 function countOf(n: number): string {
   return n === 1 ? "1 block" : `${n} blocks`;
 }
 
-export function deleteBlock({ type, number }: { type?: string; number?: number }): string {
+/** What is left, said the same way however many went. */
+function andWhatIsLeft(spoken: string, workspace: Blockly.Workspace): string {
+  const left = ownBlocks(workspace).length;
+  return left === 0
+    ? `${spoken}. The workspace is empty.`
+    : `${spoken}. ${countOf(left)} left, numbered from one.`;
+}
+
+/**
+ * Deletes a block, several by the numbers on them, or every one.
+ *
+ * Starting over has to be sayable. Emptying the workspace by hand means
+ * dragging each block to the bin one at a time, which is the thing our users
+ * cannot do — without this, the only way out of a tangled program is a mouse.
+ */
+export function deleteBlocks({
+  type,
+  number,
+  numbers,
+}: {
+  type?: string;
+  number?: number;
+  numbers?: string;
+}): string {
   const workspace = getActiveWorkspace();
+
+  if (numbers !== undefined) return deleteMany(workspace, numbers, type);
 
   const block = resolveBlock(workspace, type, number !== undefined ? { number } : {});
   if (!block) return describeMiss(type, number);
@@ -256,11 +257,56 @@ export function deleteBlock({ type, number }: { type?: string; number?: number }
 
   // The block it named is gone, so there is no number to give back — but every
   // number after it has just moved up, and the agent's copy of the workspace
-  // predates that. Saying how many are left is what stops it aiming at a
-  // number that now belongs to something else.
-  const left = workspace.getAllBlocks(false).filter((other) => !other.isShadow()).length;
-  if (left === 0) return `Deleted the ${removed} block. The workspace is empty.`;
-  return `Deleted the ${removed} block. ${left} ${left === 1 ? "block is" : "blocks are"} left, numbered from one.`;
+  // predates that.
+  return andWhatIsLeft(`Deleted the ${removed} block`, workspace);
+}
+
+function deleteMany(workspace: Blockly.Workspace, numbers: string, type?: string): string {
+  const present = ownBlocks(workspace);
+  if (present.length === 0) return "There is nothing to delete.";
+
+  const wanted = parseWanted(numbers);
+  if (!wanted) return "I am not sure which blocks you mean.";
+
+  const resolved = type === undefined ? null : resolveBlockType(type);
+  if (type !== undefined && !resolved) return `I do not know a block called ${type}.`;
+
+  if (wanted.kind === "all" && !resolved) {
+    // Blockly's own clear rather than disposing one by one: it takes the undo
+    // stack and everything else hanging off the workspace with it.
+    workspace.clear();
+    forgetEveryBlock();
+    numberBlocks(workspace);
+    return `Deleted ${countOf(present.length)}. The workspace is empty.`;
+  }
+
+  // Every block is found before any is removed: deleting one renumbers the
+  // rest, so resolving as we went would make the second number mean something
+  // else by the time we reached it.
+  const doomed =
+    wanted.kind === "all"
+      ? present.filter((block) => block.type === resolved)
+      : wanted.numbers
+          .map((n) => findBlockByNumber(workspace, n))
+          .filter((block): block is Blockly.Block => block !== null)
+          .filter((block) => resolved === null || block.type === resolved);
+
+  const unique = [...new Set(doomed)];
+  if (unique.length === 0) {
+    return resolved
+      ? `I cannot find a ${spokenName(resolved)} block.`
+      : "I cannot find those blocks.";
+  }
+
+  for (const block of unique) {
+    forgetBlock(block);
+    // A block inside one already deleted goes with it; disposing twice throws.
+    if (!block.disposed) block.dispose(true);
+  }
+  numberBlocks(workspace);
+
+  const what = resolved ? `, all of them ${spokenName(resolved)}` : "";
+  return andWhatIsLeft(`Deleted ${countOf(unique.length)}${what}`, workspace);
 }
 
 /**
@@ -327,14 +373,20 @@ export const VOICE_ACTIONS = {
     handler: (args) => attachBlock(args),
   }),
 
-  deleteBlock: defineAction({
+  deleteBlocks: defineAction({
     description:
-      "Delete a block, by the number shown on it or by type. " +
-      "Omit both to delete the block that was just added.",
+      "Delete blocks: one, several, or every one. " +
+      "Omit everything to delete the block that was just added.",
     params: {
       number: {
         type: "number",
-        description: "The number shown on the block to delete. Most precise.",
+        description: "The number shown on a single block to delete. Most precise.",
+      },
+      numbers: {
+        type: "string",
+        description:
+          "Several blocks at once: the numbers shown on them, like '2, 4', " +
+          "or the word 'all' for every block. 'all' with a type deletes every block of that kind.",
       },
       type: {
         type: "string",
@@ -342,21 +394,7 @@ export const VOICE_ACTIONS = {
         description: "The block to delete, by name",
       },
     },
-    handler: (args) => deleteBlock(args),
-  }),
-
-  deleteAllBlocks: defineAction({
-    description:
-      "Delete every block at once, or every block of one kind. " +
-      "This is what 'start again', 'clear everything' or 'delete them all' mean.",
-    params: {
-      type: {
-        type: "string",
-        enum: [...BLOCK_NAMES],
-        description: "Only delete blocks of this kind. Omit to empty the workspace.",
-      },
-    },
-    handler: (args) => deleteAllBlocks(args),
+    handler: (args) => deleteBlocks(args),
   }),
 
   setParam: defineAction({

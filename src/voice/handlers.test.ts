@@ -8,8 +8,7 @@ import { initBlocklyLocale } from "@/blockly/locale";
 import {
   addBlock,
   attachBlock,
-  deleteAllBlocks,
-  deleteBlock,
+  deleteBlocks,
   haltProgram,
   setParam,
   startProgram,
@@ -212,13 +211,13 @@ describe("attachBlock", () => {
   });
 });
 
-describe("deleteAllBlocks", () => {
+describe("deleting many at once", () => {
   it("empties the workspace so starting over does not need a mouse", async () => {
     await addBlock({ type: "move" });
     await addBlock({ type: "repeat" });
     await addBlock({ type: "say" });
 
-    const spoken = deleteAllBlocks({});
+    const spoken = deleteBlocks({ numbers: "all" });
 
     expect(workspace.getAllBlocks(false)).toHaveLength(0);
     expect(spoken).toContain("3 blocks");
@@ -230,38 +229,62 @@ describe("deleteAllBlocks", () => {
     await addBlock({ type: "move" });
     await addBlock({ type: "say" });
 
-    const spoken = deleteAllBlocks({ type: "move" });
+    const spoken = deleteBlocks({ numbers: "all", type: "move" });
 
     const left = workspace.getAllBlocks(false).filter((block) => !block.isShadow());
     expect(left.map((block) => block.type)).toEqual(["bloxide_say"]);
     expect(spoken).toContain("2 blocks");
   });
 
+  it("takes several numbers at once, resolved before any of them goes", async () => {
+    await addBlock({ type: "move" });
+    await addBlock({ type: "repeat" });
+    await addBlock({ type: "say" });
+
+    // Deleting one renumbers the rest, so the numbers are read against the
+    // workspace as the speaker saw it, not as it is midway through.
+    const first = badgeOf("bloxide_move");
+    const third = badgeOf("bloxide_say");
+    const spoken = deleteBlocks({ numbers: `${first}, ${third}` });
+
+    expect(ownBlocks().map((block) => block.type)).toEqual(["controls_repeat_ext"]);
+    expect(spoken).toContain("2 blocks");
+  });
+
+  it("ignores a number no block wears rather than deleting something else", async () => {
+    await addBlock({ type: "move" });
+
+    const spoken = deleteBlocks({ numbers: "1, 9" });
+
+    expect(ownBlocks()).toHaveLength(0);
+    expect(spoken).toContain("1 block");
+  });
+
   it("says so rather than claiming a change when there is nothing to delete", () => {
-    expect(deleteAllBlocks({})).toBe("There is nothing to delete.");
+    expect(deleteBlocks({ numbers: "all" })).toBe("There is nothing to delete.");
   });
 
   it("refuses a kind it does not ship", async () => {
     await addBlock({ type: "move" });
 
-    expect(deleteAllBlocks({ type: "jump" })).toContain("do not know");
+    expect(deleteBlocks({ numbers: "all", type: "jump" })).toContain("do not know");
     expect(workspace.getAllBlocks(false).filter((b) => !b.isShadow())).toHaveLength(1);
   });
 
   it("forgets the block the next sentence would have acted on", async () => {
     await addBlock({ type: "move" });
-    deleteAllBlocks({});
+    deleteBlocks({ numbers: "all" });
 
     // "make it ten steps" must not reach a block that no longer exists.
     expect(setParam({ value: "10" })).toContain("not sure which block");
   });
 });
 
-describe("deleteBlock", () => {
+describe("deleteBlocks", () => {
   it("deletes the block just added when no type is given", async () => {
     await addBlock({ type: "bloxide_move" });
 
-    const spoken = deleteBlock({});
+    const spoken = deleteBlocks({});
 
     expect(workspace.getAllBlocks(false)).toHaveLength(0);
     expect(spoken).toContain("Deleted the move block");
@@ -271,13 +294,13 @@ describe("deleteBlock", () => {
     await addBlock({ type: "controls_repeat_ext" });
     await addBlock({ type: "bloxide_say" });
 
-    deleteBlock({ type: "repeat" });
+    deleteBlocks({ type: "repeat" });
 
     expect(ownBlocks().map((block) => block.type)).toEqual(["bloxide_say"]);
   });
 
   it("says so when there is nothing to delete", () => {
-    expect(deleteBlock({ type: "repeat" })).toBe("I cannot find a repeat block.");
+    expect(deleteBlocks({ type: "repeat" })).toBe("I cannot find a repeat block.");
   });
 });
 
@@ -332,7 +355,7 @@ describe("referring by number", () => {
     await addBlock({ type: "bloxide_say" });
     numberBlocks(workspace);
 
-    const spoken = deleteBlock({ number: badgeOf("controls_repeat_ext") });
+    const spoken = deleteBlocks({ number: badgeOf("controls_repeat_ext") });
 
     expect(spoken).toContain("Deleted the repeat block");
     expect(ownBlocks().map((block) => block.type)).toEqual(["bloxide_say"]);
@@ -344,7 +367,7 @@ describe("referring by number", () => {
     numberBlocks(workspace);
 
     // A misheard type with the right number still lands on the right block.
-    const spoken = deleteBlock({ number: badgeOf("bloxide_say"), type: "repeat" });
+    const spoken = deleteBlocks({ number: badgeOf("bloxide_say"), type: "repeat" });
 
     expect(spoken).toContain("Deleted the say block");
   });
@@ -353,7 +376,7 @@ describe("referring by number", () => {
     await addBlock({ type: "bloxide_say" });
     numberBlocks(workspace);
 
-    expect(deleteBlock({ number: 9 })).toBe("There is no block 9.");
+    expect(deleteBlocks({ number: 9 })).toBe("There is no block 9.");
   });
 
   it("attaches by number, including two blocks of the same type", async () => {
@@ -394,7 +417,7 @@ describe("numbers stay usable without waiting for Blockly's events", () => {
     await addBlock({ type: "bloxide_say" });
     await addBlock({ type: "bloxide_forever" });
 
-    deleteBlock({ number: 2 });
+    deleteBlocks({ number: 2 });
 
     expect(ownBlocks().map(getBlockNumber)).toEqual([1, 2]);
   });
@@ -409,7 +432,7 @@ describe("numbers stay usable without waiting for Blockly's events", () => {
     await addBlock({ type: "controls_repeat_ext" });
     await addBlock({ type: "bloxide_say" });
 
-    expect(deleteBlock({ number: badgeOf("bloxide_say") })).toContain("Deleted the say block");
+    expect(deleteBlocks({ number: badgeOf("bloxide_say") })).toContain("Deleted the say block");
   });
 });
 
