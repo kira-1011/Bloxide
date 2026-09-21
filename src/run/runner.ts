@@ -6,19 +6,8 @@ import { ProgramStopped } from "@/run/program-stopped";
 import { createSpriteApi, type RunSession } from "@/sprite/sprite-api";
 import { resetSprite, setSaying } from "@/sprite/sprite-store";
 
-/**
- * A line of program output. Nothing writes one now that the sprite speaks
- * instead of printing; the shape stays until the panel reading it goes.
- */
-export interface OutputLine {
-  /** Printing the same text twice is normal, so lines carry an id. */
-  readonly id: number;
-  readonly text: string;
-}
-
 export interface RunState {
   readonly running: boolean;
-  readonly output: readonly OutputLine[];
   readonly error: string | null;
 }
 
@@ -38,12 +27,7 @@ let currentRun: Run | null = null;
 
 // The state lives here rather than in React because a program can be started by
 // a button or by voice, and both must see the same run.
-const store = createStore<RunState>()(() => ({ running: false, output: [], error: null }));
-
-export const subscribeToRun = store.subscribe;
-
-/** Stable between changes, as the React binding requires. */
-export const getRunState = (): RunState => store.getState();
+const store = createStore<RunState>()(() => ({ running: false, error: null }));
 
 export function isProgramRunning(): boolean {
   return currentRun !== null;
@@ -65,7 +49,7 @@ export async function runProgram(workspace: Blockly.Workspace): Promise<void> {
 
   const run: Run = { cancelled: false, aborts: new Set() };
   currentRun = run;
-  store.setState({ running: true, output: [], error: null });
+  store.setState({ running: true, error: null });
   // Scratch leaves the sprite where the last run left it. A child who runs the
   // same program twice and gets two different pictures reads the blocks as
   // broken, and has no cheap way to put the sprite back.
@@ -111,6 +95,9 @@ export async function runProgram(workspace: Blockly.Workspace): Promise<void> {
   };
 
   try {
+    // `new Function` is typed as returning `Function`, which takes any
+    // arguments and returns any: the cast is the only way to say what this one
+    // is, and the string above is what makes it true.
     const program = new Function("__tick", "__sprite", `return (async () => {\n${code}\n})();`) as (
       tick: () => Promise<void>,
       sprite: ReturnType<typeof createSpriteApi>,
