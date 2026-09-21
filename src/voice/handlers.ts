@@ -8,6 +8,7 @@ import { getBlockNumber, numberBlocks, revealBlock, selectOnly } from "@/blockly
 import {
   findBlockByNumber,
   forgetBlock,
+  forgetMissingBlock,
   rememberBlock,
   resolveBlock,
 } from "@/blockly/block-reference";
@@ -202,15 +203,22 @@ export function setParam({
  *
  * It arrives as a string because the schema carries only strings and numbers.
  */
-function parseNumbers(numbers: string): number[] | null {
-  const parts = numbers.split(",").map((part) => part.trim());
-  if (parts.length === 0) return null;
+/**
+ * A part is a block number only if it survives the round trip.
+ *
+ * `Number` is generous — "1e2" is 100, "0x10" is 16, "+1" is 1 — and a wrong
+ * deletion cannot be undone by speaking. Reading it back and comparing is what
+ * rejects the clever spellings without teaching this file to read digits.
+ */
+function blockNumber(part: string): number | null {
+  const parsed = Number(part);
+  if (!Number.isSafeInteger(parsed) || parsed <= 0) return null;
+  return String(parsed) === part ? parsed : null;
+}
 
-  // Anything that is not a whole counting number is refused outright. Reading
-  // the digits out of whatever arrives would take "1.5" for blocks 1 and 5 and
-  // delete them both, and a wrong deletion cannot be undone by speaking.
-  const parsed = parts.map(Number);
-  return parsed.every((n) => Number.isSafeInteger(n) && n > 0) ? parsed : null;
+function parseNumbers(numbers: string): number[] | null {
+  const parsed = numbers.split(",").map((part) => blockNumber(part.trim()));
+  return parsed.every((number) => number !== null) ? parsed : null;
 }
 
 /** Counted after the fact: what the workspace holds, not what we meant to remove. */
@@ -257,6 +265,7 @@ export function deleteBlocks({
   forgetBlock(block);
   // healStack: what was under it reconnects instead of being orphaned.
   block.dispose(true);
+  forgetMissingBlock(workspace);
   numberBlocks(workspace);
 
   // The block it named is gone, so there is no number to give back — but every
@@ -286,6 +295,7 @@ function deleteMany(workspace: Blockly.Workspace, numbers: string): string {
     // A block inside one already deleted goes with it; disposing twice throws.
     if (!block.disposed) block.dispose(true);
   }
+  forgetMissingBlock(workspace);
   numberBlocks(workspace);
 
   return andWhatIsLeft(`Deleted ${countOf(unique.length)}`, workspace);

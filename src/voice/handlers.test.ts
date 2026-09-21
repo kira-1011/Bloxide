@@ -260,7 +260,18 @@ describe("deleting many at once", () => {
     // "1.5" read loosely is blocks 1 and 5; "-1" is block 1. A wrong deletion
     // is not something a child can undo by speaking. Words are refused too:
     // working out what "all of them" means belongs to the agent.
-    for (const numbers of ["1.5", "-1", "the first one", "1, banana", "all"]) {
+    // Number is generous: "1e2" is 100, "0x10" is 16, "+1" is 1.
+    for (const numbers of [
+      "1.5",
+      "-1",
+      "the first one",
+      "1, banana",
+      "all",
+      "1e2",
+      "0x10",
+      "+1",
+      "01",
+    ]) {
       expect(deleteBlocks({ numbers }), numbers).toBe("I am not sure which blocks you mean.");
     }
 
@@ -269,6 +280,18 @@ describe("deleting many at once", () => {
 
   it("says so rather than claiming a change when there is nothing to delete", () => {
     expect(deleteBlocks({ numbers: "1" })).toBe("There is nothing to delete.");
+  });
+
+  it("forgets a block that went as somebody's child", async () => {
+    await addBlock({ type: "repeat" });
+    await addBlock({ type: "move" });
+    await attachBlock({ to: "repeat" });
+
+    // The move is what "it" refers to, and deleting the repeat takes it too
+    // without ever naming it.
+    deleteBlocks({ numbers: String(badgeOf("controls_repeat_ext")) });
+
+    expect(setParam({ value: "10" })).toContain("not sure which block");
   });
 
   it("forgets the block the next sentence would have acted on", async () => {
