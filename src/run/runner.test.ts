@@ -2,20 +2,14 @@ import * as Blockly from "blockly/core";
 import "blockly/blocks";
 import "@/blocks/sprite-blocks";
 import { afterEach, describe, expect, it } from "vitest";
-import {
-  getRunState,
-  isProgramRunning,
-  runProgram,
-  stopProgram,
-  subscribeToRun,
-} from "@/run/runner";
+import { isProgramRunning, runProgram, runStore, stopProgram } from "@/run/runner";
 import { initBlocklyLocale } from "@/blockly/locale";
 import {
   getSpriteState,
   moveSteps,
   resetSprite,
   setSaying,
-  subscribeToSprite,
+  spriteStore,
 } from "@/sprite/sprite-store";
 
 // Block definitions interpolate Blockly.Msg; without messages newBlock throws.
@@ -67,7 +61,7 @@ describe("runProgram", () => {
     await runProgram(workspace);
 
     expect(Math.round(getSpriteState().x)).toBe(50);
-    expect(getRunState().error).toBeNull();
+    expect(runStore.getState().error).toBeNull();
   });
 
   it("says what a say block says, and clears the bubble at the end", async () => {
@@ -78,7 +72,7 @@ describe("runProgram", () => {
       connect(say.getInput("TEXT")?.connection, words.outputConnection);
     });
     const said: (string | null)[] = [];
-    const unsubscribe = subscribeToSprite(() => said.push(getSpriteState().saying));
+    const unsubscribe = spriteStore.subscribe(() => said.push(getSpriteState().saying));
 
     await runProgram(workspace);
     unsubscribe();
@@ -90,7 +84,7 @@ describe("runProgram", () => {
   it("runs an empty workspace without complaint", async () => {
     await runProgram(new Blockly.Workspace());
 
-    expect(getRunState().error).toBeNull();
+    expect(runStore.getState().error).toBeNull();
     expect(isProgramRunning()).toBe(false);
   });
 
@@ -98,7 +92,7 @@ describe("runProgram", () => {
     const workspace = workspaceWith((ws) => repeatBlock(ws, 1000, moveBlock(ws, 1)));
 
     let steps = 0;
-    const unsubscribe = subscribeToSprite(() => {
+    const unsubscribe = spriteStore.subscribe(() => {
       steps += 1;
       if (steps === 3) stopProgram();
     });
@@ -115,7 +109,7 @@ describe("runProgram", () => {
     const workspace = workspaceWith((ws) => repeatBlock(ws, 50, moveBlock(ws, 1)));
 
     let seenRunning = false;
-    const unsubscribe = subscribeToRun(() => {
+    const unsubscribe = runStore.subscribe(() => {
       seenRunning ||= isProgramRunning();
     });
 
