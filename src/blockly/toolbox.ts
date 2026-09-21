@@ -151,10 +151,20 @@ interface ResolvedEntry {
 const ENTRIES: readonly ResolvedEntry[] = CATEGORIES.flatMap((category) => [...category.contents]);
 
 /**
- * The same types the toolbox offers, as the enum the voice agent picks from.
+ * The same types the toolbox offers.
  * Derived so a block can never be reachable by hand but not by voice.
  */
 export const BLOCK_TYPES: readonly BlockType[] = ENTRIES.map((entry) => entry.type);
+
+/**
+ * The same blocks again, as the words the agent chooses between.
+ *
+ * Not the type ids. Asked to pick `bloxide_move` out of a list of internal
+ * ids, the agent stopped calling `addBlock` at all — it answered "I've added a
+ * move block" and did nothing, while every capability without an id enum kept
+ * working. These are the words a child says, and `resolveBlockType` takes them.
+ */
+export const BLOCK_NAMES: readonly string[] = ENTRIES.map((entry) => entry.say[0] ?? entry.type);
 
 function normalise(value: string): string {
   return value
@@ -183,9 +193,10 @@ export function spokenName(type: string): string {
 /**
  * Resolves whatever the agent sent to a type we ship, or null.
  *
- * The enum steers the model towards type ids but enforces nothing, so a spoken
- * word still arrives sometimes. Rejecting "repeat" would dead-end the one
- * sentence the README teaches.
+ * The enum offers spoken names, but it enforces nothing and a type id still
+ * arrives sometimes — from a stale manifest, or a model that has seen one.
+ * Both are accepted; only an ambiguous word is refused, so "turn" cannot
+ * silently become one of the two turns.
  */
 export function resolveBlockType(value: string): BlockType | null {
   const wanted = normalise(value);

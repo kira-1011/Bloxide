@@ -5,7 +5,7 @@ import { getActiveWorkspace } from "@/blockly/active-workspace";
 import { setFieldValue } from "@/blockly/block-fields";
 import { numberBlocks, revealBlock, selectOnly } from "@/blockly/block-view";
 import { forgetBlock, rememberBlock, resolveBlock } from "@/blockly/block-reference";
-import { BLOCK_TYPES, resolveBlockType, slotDefaults, spokenName } from "@/blockly/toolbox";
+import { BLOCK_NAMES, resolveBlockType, slotDefaults, spokenName } from "@/blockly/toolbox";
 import { isProgramRunning, runProgram, stopProgram } from "@/run/runner";
 
 // Every capability the agent can invoke. One block, one connection or one value
@@ -216,10 +216,8 @@ export const VOICE_ACTIONS = {
       type: {
         type: "string",
         required: true,
-        // Without the enum the model passes the spoken word through —
-        // "repeat" rather than controls_repeat — and nothing matches.
-        enum: [...BLOCK_TYPES],
-        description: "The Blockly type id of the block to add",
+        enum: [...BLOCK_NAMES],
+        description: "The block to add, by name",
       },
     },
     handler: ({ type }) => addBlock({ type }),
@@ -237,8 +235,8 @@ export const VOICE_ACTIONS = {
       },
       type: {
         type: "string",
-        enum: [...BLOCK_TYPES],
-        description: "The block to attach, by type. Omit for the block just added.",
+        enum: [...BLOCK_NAMES],
+        description: "The block to attach, by name. Omit for the block just added.",
       },
       toNumber: {
         type: "number",
@@ -246,8 +244,8 @@ export const VOICE_ACTIONS = {
       },
       to: {
         type: "string",
-        enum: [...BLOCK_TYPES],
-        description: "The block to attach it to, by type",
+        enum: [...BLOCK_NAMES],
+        description: "The block to attach it to, by name",
       },
     },
     handler: (args) => attachBlock(args),
@@ -264,8 +262,8 @@ export const VOICE_ACTIONS = {
       },
       type: {
         type: "string",
-        enum: [...BLOCK_TYPES],
-        description: "The block to delete, by type",
+        enum: [...BLOCK_NAMES],
+        description: "The block to delete, by name",
       },
     },
     handler: (args) => deleteBlock(args),
@@ -283,8 +281,8 @@ export const VOICE_ACTIONS = {
       },
       type: {
         type: "string",
-        enum: [...BLOCK_TYPES],
-        description: "The block to change, by type",
+        enum: [...BLOCK_NAMES],
+        description: "The block to change, by name",
       },
       value: {
         type: "string",
