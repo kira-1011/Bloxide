@@ -1,10 +1,17 @@
+import type * as Blockly from "blockly/core";
 import { BlockSvg, ConnectionType, serialization } from "blockly/core";
 import type { VoxideActionConfig } from "@voxide/react";
 import { defineAction } from "@/voice/define-action";
 import { getActiveWorkspace } from "@/blockly/active-workspace";
 import { setFieldValue } from "@/blockly/block-fields";
-import { numberBlocks, revealBlock, selectOnly } from "@/blockly/block-view";
-import { forgetBlock, rememberBlock, resolveBlock } from "@/blockly/block-reference";
+import { getBlockNumber, numberBlocks, revealBlock, selectOnly } from "@/blockly/block-view";
+import {
+  findBlockByNumber,
+  forgetBlock,
+  forgetMissingBlock,
+  rememberBlock,
+  resolveBlock,
+} from "@/blockly/block-reference";
 import { BLOCK_NAMES, resolveBlockType, slotDefaults, spokenName } from "@/blockly/toolbox";
 import { isProgramRunning, runProgram, stopProgram } from "@/run/runner";
 
@@ -12,6 +19,20 @@ import { isProgramRunning, runProgram, stopProgram } from "@/run/runner";
 // per utterance, and never `dangerous: true` — it asks for a click to confirm.
 
 type ConnectionTypeValue = (typeof ConnectionType)[keyof typeof ConnectionType];
+
+/**
+ * Says which block it was, because the agent cannot see that yet.
+ *
+ * Every tool result carries the workspace back to the agent, but the SDK takes
+ * that snapshot *before* the action runs — so a block added in this breath is
+ * missing from it, and the blocks that were renumbered around it still read as
+ * they were. The result is the only channel that reflects the change, so the
+ * number rides home on it. DESIGN.md asks for exactly this sentence.
+ */
+function andItsNumber(said: string, block: Blockly.Block): string {
+  const number = getBlockNumber(block);
+  return number === null ? said : `${said}. It is block ${number}.`;
+}
 
 function describeMiss(type?: string, number?: number): string {
   if (number !== undefined) return `There is no block ${number}.`;
@@ -52,7 +73,7 @@ export function addBlock({ type }: { type: string }): string {
   // renumber until after this returns and the next spoken number would miss.
   numberBlocks(workspace);
 
-  return `Added a ${spokenName(resolved)} block`;
+  return andItsNumber(`Added a ${spokenName(resolved)} block`, block);
 }
 
 /**
@@ -112,7 +133,7 @@ export function attachBlock({
     for (const connection of openInputs(ConnectionType.INPUT_VALUE)) {
       if (connection?.connect(child.outputConnection)) {
         numberBlocks(workspace);
-        return `Put it in the ${spokenName(parent.type)} block`;
+        return andItsNumber(`Put it in the ${spokenName(parent.type)} block`, child);
       }
     }
   }
@@ -122,13 +143,13 @@ export function attachBlock({
     for (const connection of openInputs(ConnectionType.NEXT_STATEMENT)) {
       if (connection?.connect(child.previousConnection)) {
         numberBlocks(workspace);
-        return `Put it inside the ${spokenName(parent.type)} block`;
+        return andItsNumber(`Put it inside the ${spokenName(parent.type)} block`, child);
       }
     }
     if (parent.nextConnection && !parent.nextConnection.targetConnection) {
       if (parent.nextConnection.connect(child.previousConnection)) {
         numberBlocks(workspace);
-        return `Put it under the ${spokenName(parent.type)} block`;
+        return andItsNumber(`Put it under the ${spokenName(parent.type)} block`, child);
       }
     }
   }
@@ -169,11 +190,73 @@ export function setParam({
   }
   rememberBlock(block);
 
-  return change.spoken;
+  return andItsNumber(change.spoken, block);
 }
 
-export function deleteBlock({ type, number }: { type?: string; number?: number }): string {
+/**
+ * The block numbers a sentence named.
+ *
+ * A list of numbers and nothing else: what "all of them" or "the loops" means
+ * is the agent's to work out, and it reads the numbered workspace before every
+ * utterance. Words are not accepted here, so there is no second, smaller
+ * understanding of English sitting behind the one that can actually listen.
+ *
+ * It arrives as a string because the schema carries only strings and numbers.
+ */
+/**
+ * A part is a block number only if it survives the round trip.
+ *
+ * `Number` is generous — "1e2" is 100, "0x10" is 16, "+1" is 1 — and a wrong
+ * deletion cannot be undone by speaking. Reading it back and comparing is what
+ * rejects the clever spellings without teaching this file to read digits.
+ */
+function blockNumber(part: string): number | null {
+  const parsed = Number(part);
+  if (!Number.isSafeInteger(parsed) || parsed <= 0) return null;
+  return String(parsed) === part ? parsed : null;
+}
+
+function parseNumbers(numbers: string): number[] | null {
+  const parsed = numbers.split(",").map((part) => blockNumber(part.trim()));
+  return parsed.every((number) => number !== null) ? parsed : null;
+}
+
+/** Counted after the fact: what the workspace holds, not what we meant to remove. */
+function ownBlocks(workspace: Blockly.Workspace): Blockly.Block[] {
+  return workspace.getAllBlocks(false).filter((block) => !block.isShadow());
+}
+
+function countOf(n: number): string {
+  return n === 1 ? "1 block" : `${n} blocks`;
+}
+
+/** What is left, said the same way however many went. */
+function andWhatIsLeft(spoken: string, workspace: Blockly.Workspace): string {
+  const left = ownBlocks(workspace).length;
+  return left === 0
+    ? `${spoken}. The workspace is empty.`
+    : `${spoken}. ${countOf(left)} left, numbered from one.`;
+}
+
+/**
+ * Deletes a block, several by the numbers on them, or every one.
+ *
+ * Starting over has to be sayable. Emptying the workspace by hand means
+ * dragging each block to the bin one at a time, which is the thing our users
+ * cannot do — without this, the only way out of a tangled program is a mouse.
+ */
+export function deleteBlocks({
+  type,
+  number,
+  numbers,
+}: {
+  type?: string;
+  number?: number;
+  numbers?: string;
+}): string {
   const workspace = getActiveWorkspace();
+
+  if (numbers !== undefined) return deleteMany(workspace, numbers);
 
   const block = resolveBlock(workspace, type, number !== undefined ? { number } : {});
   if (!block) return describeMiss(type, number);
@@ -182,9 +265,40 @@ export function deleteBlock({ type, number }: { type?: string; number?: number }
   forgetBlock(block);
   // healStack: what was under it reconnects instead of being orphaned.
   block.dispose(true);
+  forgetMissingBlock(workspace);
   numberBlocks(workspace);
 
-  return `Deleted the ${removed} block`;
+  // The block it named is gone, so there is no number to give back — but every
+  // number after it has just moved up, and the agent's copy of the workspace
+  // predates that.
+  return andWhatIsLeft(`Deleted the ${removed} block`, workspace);
+}
+
+function deleteMany(workspace: Blockly.Workspace, numbers: string): string {
+  if (ownBlocks(workspace).length === 0) return "There is nothing to delete.";
+
+  const wanted = parseNumbers(numbers);
+  if (!wanted) return "I am not sure which blocks you mean.";
+
+  // Every block is found before any is removed: deleting one renumbers the
+  // rest, so resolving as we went would make the second number mean something
+  // else by the time we reached it.
+  const found = wanted
+    .map((n) => findBlockByNumber(workspace, n))
+    .filter((block): block is Blockly.Block => block !== null);
+
+  const unique = [...new Set(found)];
+  if (unique.length === 0) return "I cannot find those blocks.";
+
+  for (const block of unique) {
+    forgetBlock(block);
+    // A block inside one already deleted goes with it; disposing twice throws.
+    if (!block.disposed) block.dispose(true);
+  }
+  forgetMissingBlock(workspace);
+  numberBlocks(workspace);
+
+  return andWhatIsLeft(`Deleted ${countOf(unique.length)}`, workspace);
 }
 
 /**
@@ -251,14 +365,20 @@ export const VOICE_ACTIONS = {
     handler: (args) => attachBlock(args),
   }),
 
-  deleteBlock: defineAction({
+  deleteBlocks: defineAction({
     description:
-      "Delete a block, by the number shown on it or by type. " +
-      "Omit both to delete the block that was just added.",
+      "Delete blocks: one by its number or name, or several by their numbers. " +
+      "Omit everything to delete the block that was just added.",
     params: {
       number: {
         type: "number",
-        description: "The number shown on the block to delete. Most precise.",
+        description: "The number shown on a single block to delete. Most precise.",
+      },
+      numbers: {
+        type: "string",
+        description:
+          "Several blocks at once: the numbers shown on them, separated by commas, like '2, 4'. " +
+          "To clear the workspace, list every block's number.",
       },
       type: {
         type: "string",
@@ -266,7 +386,7 @@ export const VOICE_ACTIONS = {
         description: "The block to delete, by name",
       },
     },
-    handler: (args) => deleteBlock(args),
+    handler: (args) => deleteBlocks(args),
   }),
 
   setParam: defineAction({

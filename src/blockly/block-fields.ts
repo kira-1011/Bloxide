@@ -16,8 +16,9 @@ export interface FieldChange {
   readonly spoken: string;
 }
 
+/** Case and stray spacing only: what a word means is the agent's to work out. */
 function normalise(value: string): string {
-  return value.trim().toLowerCase().replace(/\s+/g, " ");
+  return value.trim().toLowerCase();
 }
 
 /**

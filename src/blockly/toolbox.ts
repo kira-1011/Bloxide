@@ -166,12 +166,9 @@ export const BLOCK_TYPES: readonly BlockType[] = ENTRIES.map((entry) => entry.ty
  */
 export const BLOCK_NAMES: readonly string[] = ENTRIES.map((entry) => entry.say[0] ?? entry.type);
 
+/** Case and stray spacing only: what a word means is the agent's to work out. */
 function normalise(value: string): string {
-  return value
-    .trim()
-    .toLowerCase()
-    .replace(/\s+/g, " ")
-    .replace(/ block$/, "");
+  return value.trim().toLowerCase();
 }
 
 /** The shadow defaults for a type, for whoever is making the block. */

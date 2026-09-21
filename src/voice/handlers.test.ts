@@ -8,7 +8,7 @@ import { initBlocklyLocale } from "@/blockly/locale";
 import {
   addBlock,
   attachBlock,
-  deleteBlock,
+  deleteBlocks,
   haltProgram,
   setParam,
   startProgram,
@@ -92,8 +92,8 @@ describe("addBlock", () => {
 
   it("says the block's name back, not its type id", async () => {
     // "Added a bloxide_move block" is not a sentence to say to a child.
-    expect(await addBlock({ type: "bloxide_move" })).toBe("Added a move block");
-    expect(await addBlock({ type: "controls_repeat_ext" })).toBe("Added a repeat block");
+    expect(await addBlock({ type: "bloxide_move" })).toContain("Added a move block");
+    expect(await addBlock({ type: "controls_repeat_ext" })).toContain("Added a repeat block");
   });
 
   it("refuses a real Blockly block we do not ship", async () => {
@@ -129,8 +129,11 @@ describe("addBlock", () => {
     expect(workspace.getAllBlocks(false)).toHaveLength(0);
   });
 
-  it('ignores casing and a trailing "block"', async () => {
-    await addBlock({ type: "Turn Left Block" });
+  it("ignores casing, and nothing else", async () => {
+    // Case is not meaning. What "the turning one" or "turn left block" refers
+    // to is the agent's to work out — it picks from the names we offer, and a
+    // second, smaller reader of English here would only disagree with it.
+    await addBlock({ type: "Turn Left" });
 
     expect(ownBlocks()[0]?.type).toBe("bloxide_turn_left");
   });
@@ -166,7 +169,7 @@ describe("attachBlock", () => {
     await addBlock({ type: "bloxide_forever" });
     await addBlock({ type: "bloxide_say" });
 
-    expect(await attachBlock({ to: "forever" })).toBe("Put it inside the forever block");
+    expect(await attachBlock({ to: "forever" })).toContain("Put it inside the forever block");
   });
 
   it("puts a block under one that takes nothing inside", async () => {
@@ -175,7 +178,7 @@ describe("attachBlock", () => {
 
     const spoken = await attachBlock({ to: "hide" });
 
-    expect(spoken).toBe("Put it under the hide block");
+    expect(spoken).toContain("Put it under the hide block");
     expect(workspace.getTopBlocks(false)).toHaveLength(1);
   });
 
@@ -211,27 +214,116 @@ describe("attachBlock", () => {
   });
 });
 
-describe("deleteBlock", () => {
+describe("deleting many at once", () => {
+  it("clears the workspace when the agent lists every number", async () => {
+    await addBlock({ type: "move" });
+    await addBlock({ type: "repeat" });
+    await addBlock({ type: "say" });
+
+    // What "all of them" means is the agent's to work out: it reads the
+    // numbered workspace before every utterance and names what it saw.
+    const spoken = deleteBlocks({ numbers: "1, 2, 3" });
+
+    expect(ownBlocks()).toHaveLength(0);
+    expect(spoken).toContain("3 blocks");
+    expect(spoken).toContain("empty");
+  });
+
+  it("takes several numbers at once, resolved before any of them goes", async () => {
+    await addBlock({ type: "move" });
+    await addBlock({ type: "repeat" });
+    await addBlock({ type: "say" });
+
+    // Deleting one renumbers the rest, so the numbers are read against the
+    // workspace as the speaker saw it, not as it is midway through.
+    const first = badgeOf("bloxide_move");
+    const third = badgeOf("bloxide_say");
+    const spoken = deleteBlocks({ numbers: `${first}, ${third}` });
+
+    expect(ownBlocks().map((block) => block.type)).toEqual(["controls_repeat_ext"]);
+    expect(spoken).toContain("2 blocks");
+  });
+
+  it("ignores a number no block wears rather than deleting something else", async () => {
+    await addBlock({ type: "move" });
+
+    const spoken = deleteBlocks({ numbers: "1, 9" });
+
+    expect(ownBlocks()).toHaveLength(0);
+    expect(spoken).toContain("1 block");
+  });
+
+  it("refuses a list it cannot read rather than deleting the wrong blocks", async () => {
+    await addBlock({ type: "move" });
+    await addBlock({ type: "repeat" });
+
+    // "1.5" read loosely is blocks 1 and 5; "-1" is block 1. A wrong deletion
+    // is not something a child can undo by speaking. Words are refused too:
+    // working out what "all of them" means belongs to the agent.
+    // Number is generous: "1e2" is 100, "0x10" is 16, "+1" is 1.
+    for (const numbers of [
+      "1.5",
+      "-1",
+      "the first one",
+      "1, banana",
+      "all",
+      "1e2",
+      "0x10",
+      "+1",
+      "01",
+    ]) {
+      expect(deleteBlocks({ numbers }), numbers).toBe("I am not sure which blocks you mean.");
+    }
+
+    expect(ownBlocks()).toHaveLength(2);
+  });
+
+  it("says so rather than claiming a change when there is nothing to delete", () => {
+    expect(deleteBlocks({ numbers: "1" })).toBe("There is nothing to delete.");
+  });
+
+  it("forgets a block that went as somebody's child", async () => {
+    await addBlock({ type: "repeat" });
+    await addBlock({ type: "move" });
+    await attachBlock({ to: "repeat" });
+
+    // The move is what "it" refers to, and deleting the repeat takes it too
+    // without ever naming it.
+    deleteBlocks({ numbers: String(badgeOf("controls_repeat_ext")) });
+
+    expect(setParam({ value: "10" })).toContain("not sure which block");
+  });
+
+  it("forgets the block the next sentence would have acted on", async () => {
+    await addBlock({ type: "move" });
+    deleteBlocks({ numbers: "1" });
+
+    // "make it ten steps" must not reach a block that no longer exists.
+    expect(setParam({ value: "10" })).toContain("not sure which block");
+  });
+});
+
+describe("deleteBlocks", () => {
   it("deletes the block just added when no type is given", async () => {
     await addBlock({ type: "bloxide_move" });
 
-    const spoken = deleteBlock({});
+    const spoken = deleteBlocks({});
 
     expect(workspace.getAllBlocks(false)).toHaveLength(0);
-    expect(spoken).toBe("Deleted the move block");
+    expect(spoken).toContain("Deleted the move block");
   });
 
   it("deletes a named block", async () => {
     await addBlock({ type: "controls_repeat_ext" });
     await addBlock({ type: "bloxide_say" });
 
-    deleteBlock({ type: "repeat" });
+    deleteBlocks({ type: "repeat" });
 
     expect(ownBlocks().map((block) => block.type)).toEqual(["bloxide_say"]);
   });
 
   it("says so when there is nothing to delete", () => {
-    expect(deleteBlock({ type: "repeat" })).toBe("I cannot find a repeat block.");
+    expect(deleteBlocks({ type: "repeat" })).toBe("I cannot find a repeat block.");
   });
 });
 
@@ -286,9 +378,9 @@ describe("referring by number", () => {
     await addBlock({ type: "bloxide_say" });
     numberBlocks(workspace);
 
-    const spoken = deleteBlock({ number: badgeOf("controls_repeat_ext") });
+    const spoken = deleteBlocks({ number: badgeOf("controls_repeat_ext") });
 
-    expect(spoken).toBe("Deleted the repeat block");
+    expect(spoken).toContain("Deleted the repeat block");
     expect(ownBlocks().map((block) => block.type)).toEqual(["bloxide_say"]);
   });
 
@@ -298,16 +390,16 @@ describe("referring by number", () => {
     numberBlocks(workspace);
 
     // A misheard type with the right number still lands on the right block.
-    const spoken = deleteBlock({ number: badgeOf("bloxide_say"), type: "repeat" });
+    const spoken = deleteBlocks({ number: badgeOf("bloxide_say"), type: "repeat" });
 
-    expect(spoken).toBe("Deleted the say block");
+    expect(spoken).toContain("Deleted the say block");
   });
 
   it("says so when no block wears that number", async () => {
     await addBlock({ type: "bloxide_say" });
     numberBlocks(workspace);
 
-    expect(deleteBlock({ number: 9 })).toBe("There is no block 9.");
+    expect(deleteBlocks({ number: 9 })).toBe("There is no block 9.");
   });
 
   it("attaches by number, including two blocks of the same type", async () => {
@@ -348,7 +440,7 @@ describe("numbers stay usable without waiting for Blockly's events", () => {
     await addBlock({ type: "bloxide_say" });
     await addBlock({ type: "bloxide_forever" });
 
-    deleteBlock({ number: 2 });
+    deleteBlocks({ number: 2 });
 
     expect(ownBlocks().map(getBlockNumber)).toEqual([1, 2]);
   });
@@ -363,7 +455,7 @@ describe("numbers stay usable without waiting for Blockly's events", () => {
     await addBlock({ type: "controls_repeat_ext" });
     await addBlock({ type: "bloxide_say" });
 
-    expect(deleteBlock({ number: badgeOf("bloxide_say") })).toBe("Deleted the say block");
+    expect(deleteBlocks({ number: badgeOf("bloxide_say") })).toContain("Deleted the say block");
   });
 });
 
