@@ -16,7 +16,7 @@ import {
 } from "@/voice/handlers";
 import { isProgramRunning } from "@/run/runner";
 import { getSpriteState, resetSprite, spriteStore } from "@/sprite/sprite-store";
-import { BLOCK_TYPES } from "@/blockly/toolbox";
+import { BLOCK_NAMES, resolveBlockType } from "@/blockly/toolbox";
 
 initBlocklyLocale();
 
@@ -54,10 +54,20 @@ function badgeOf(type: string): number {
 }
 
 describe("addBlock", () => {
-  it("offers the model the toolbox types to choose from", () => {
-    // Without the enum the model passes the child's word — "repeat" — through.
-    expect(VOICE_ACTIONS.addBlock?.params?.type?.enum).toEqual([...BLOCK_TYPES]);
-    expect(BLOCK_TYPES).toContain("bloxide_move");
+  it("offers the model words, not type ids, to choose from", () => {
+    // Offered internal ids, the agent stopped calling addBlock at all and
+    // claimed the block was added instead.
+    expect(VOICE_ACTIONS.addBlock?.params?.type?.enum).toEqual([...BLOCK_NAMES]);
+    expect(BLOCK_NAMES).toContain("move");
+    expect(BLOCK_NAMES.some((name) => name.startsWith("bloxide_"))).toBe(false);
+  });
+
+  it("takes every word it offers", () => {
+    // The enum and the resolver read the same list, so nothing can be offered
+    // that would then be refused.
+    for (const name of BLOCK_NAMES) {
+      expect(resolveBlockType(name), name).not.toBeNull();
+    }
   });
 
   it("fills every value input with a shadow, so no hole is left to drop into", async () => {
