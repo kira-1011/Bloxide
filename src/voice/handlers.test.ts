@@ -129,8 +129,11 @@ describe("addBlock", () => {
     expect(workspace.getAllBlocks(false)).toHaveLength(0);
   });
 
-  it('ignores casing and a trailing "block"', async () => {
-    await addBlock({ type: "Turn Left Block" });
+  it("ignores casing, and nothing else", async () => {
+    // Case is not meaning. What "the turning one" or "turn left block" refers
+    // to is the agent's to work out — it picks from the names we offer, and a
+    // second, smaller reader of English here would only disagree with it.
+    await addBlock({ type: "Turn Left" });
 
     expect(ownBlocks()[0]?.type).toBe("bloxide_turn_left");
   });
@@ -212,28 +215,18 @@ describe("attachBlock", () => {
 });
 
 describe("deleting many at once", () => {
-  it("empties the workspace so starting over does not need a mouse", async () => {
+  it("clears the workspace when the agent lists every number", async () => {
     await addBlock({ type: "move" });
     await addBlock({ type: "repeat" });
     await addBlock({ type: "say" });
 
-    const spoken = deleteBlocks({ numbers: "all" });
+    // What "all of them" means is the agent's to work out: it reads the
+    // numbered workspace before every utterance and names what it saw.
+    const spoken = deleteBlocks({ numbers: "1, 2, 3" });
 
-    expect(workspace.getAllBlocks(false)).toHaveLength(0);
+    expect(ownBlocks()).toHaveLength(0);
     expect(spoken).toContain("3 blocks");
     expect(spoken).toContain("empty");
-  });
-
-  it("deletes only the kind it was given", async () => {
-    await addBlock({ type: "move" });
-    await addBlock({ type: "move" });
-    await addBlock({ type: "say" });
-
-    const spoken = deleteBlocks({ numbers: "all", type: "move" });
-
-    const left = workspace.getAllBlocks(false).filter((block) => !block.isShadow());
-    expect(left.map((block) => block.type)).toEqual(["bloxide_say"]);
-    expect(spoken).toContain("2 blocks");
   });
 
   it("takes several numbers at once, resolved before any of them goes", async () => {
@@ -265,44 +258,22 @@ describe("deleting many at once", () => {
     await addBlock({ type: "repeat" });
 
     // "1.5" read loosely is blocks 1 and 5; "-1" is block 1. A wrong deletion
-    // is not something a child can undo by speaking.
-    for (const numbers of ["1.5", "-1", "the first one", "1, banana"]) {
+    // is not something a child can undo by speaking. Words are refused too:
+    // working out what "all of them" means belongs to the agent.
+    for (const numbers of ["1.5", "-1", "the first one", "1, banana", "all"]) {
       expect(deleteBlocks({ numbers }), numbers).toBe("I am not sure which blocks you mean.");
     }
 
     expect(ownBlocks()).toHaveLength(2);
   });
 
-  it("reads the separators a sentence actually uses", async () => {
-    await addBlock({ type: "move" });
-    await addBlock({ type: "repeat" });
-    await addBlock({ type: "say" });
-
-    expect(deleteBlocks({ numbers: "1 and 3" })).toContain("2 blocks");
-    expect(ownBlocks()).toHaveLength(1);
-  });
-
-  it("takes the word for every block, however it is phrased", async () => {
-    await addBlock({ type: "move" });
-
-    expect(deleteBlocks({ numbers: "all of them" })).toContain("empty");
-    expect(ownBlocks()).toHaveLength(0);
-  });
-
   it("says so rather than claiming a change when there is nothing to delete", () => {
-    expect(deleteBlocks({ numbers: "all" })).toBe("There is nothing to delete.");
-  });
-
-  it("refuses a kind it does not ship", async () => {
-    await addBlock({ type: "move" });
-
-    expect(deleteBlocks({ numbers: "all", type: "jump" })).toContain("do not know");
-    expect(workspace.getAllBlocks(false).filter((b) => !b.isShadow())).toHaveLength(1);
+    expect(deleteBlocks({ numbers: "1" })).toBe("There is nothing to delete.");
   });
 
   it("forgets the block the next sentence would have acted on", async () => {
     await addBlock({ type: "move" });
-    deleteBlocks({ numbers: "all" });
+    deleteBlocks({ numbers: "1" });
 
     // "make it ten steps" must not reach a block that no longer exists.
     expect(setParam({ value: "10" })).toContain("not sure which block");

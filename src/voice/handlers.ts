@@ -8,7 +8,6 @@ import { getBlockNumber, numberBlocks, revealBlock, selectOnly } from "@/blockly
 import {
   findBlockByNumber,
   forgetBlock,
-  forgetEveryBlock,
   rememberBlock,
   resolveBlock,
 } from "@/blockly/block-reference";
@@ -194,31 +193,24 @@ export function setParam({
 }
 
 /**
- * Which blocks a sentence meant: one, a handful, or the lot.
+ * The block numbers a sentence named.
  *
- * The agent sends a string because the param schema carries only strings and
- * numbers — no arrays, no booleans — so it is parsed into a real shape here
- * rather than being read as a string everywhere downstream.
+ * A list of numbers and nothing else: what "all of them" or "the loops" means
+ * is the agent's to work out, and it reads the numbered workspace before every
+ * utterance. Words are not accepted here, so there is no second, smaller
+ * understanding of English sitting behind the one that can actually listen.
+ *
+ * It arrives as a string because the schema carries only strings and numbers.
  */
-type Wanted = { readonly kind: "all" } | { readonly kind: "list"; readonly numbers: number[] };
+function parseNumbers(numbers: string): number[] | null {
+  const parts = numbers.split(",").map((part) => part.trim());
+  if (parts.length === 0) return null;
 
-function parseWanted(numbers: string): Wanted | null {
-  const said = numbers.trim().toLowerCase();
-  if (said === "") return null;
-
-  // "all", "all of them", "every block" — the word, with no digits to contradict it.
-  if (!/\d/.test(said) && /\b(all|every|everything)\b/.test(said)) return { kind: "all" };
-
-  // Otherwise every piece has to be a plain whole number. Pulling the digits out
-  // of whatever arrives would read "1.5" as blocks 1 and 5 and delete them both,
-  // and a wrong deletion is not something a child can undo by speaking.
-  const tokens = said.split(/(?:,|\band\b|\s)+/).filter(Boolean);
-  if (tokens.length === 0 || tokens.some((token) => !/^\d+$/.test(token))) return null;
-
-  const parsed = tokens.map(Number);
-  return parsed.every((n) => Number.isSafeInteger(n) && n > 0)
-    ? { kind: "list", numbers: parsed }
-    : null;
+  // Anything that is not a whole counting number is refused outright. Reading
+  // the digits out of whatever arrives would take "1.5" for blocks 1 and 5 and
+  // delete them both, and a wrong deletion cannot be undone by speaking.
+  const parsed = parts.map(Number);
+  return parsed.every((n) => Number.isSafeInteger(n) && n > 0) ? parsed : null;
 }
 
 /** Counted after the fact: what the workspace holds, not what we meant to remove. */
@@ -256,7 +248,7 @@ export function deleteBlocks({
 }): string {
   const workspace = getActiveWorkspace();
 
-  if (numbers !== undefined) return deleteMany(workspace, numbers, type);
+  if (numbers !== undefined) return deleteMany(workspace, numbers);
 
   const block = resolveBlock(workspace, type, number !== undefined ? { number } : {});
   if (!block) return describeMiss(type, number);
@@ -273,42 +265,21 @@ export function deleteBlocks({
   return andWhatIsLeft(`Deleted the ${removed} block`, workspace);
 }
 
-function deleteMany(workspace: Blockly.Workspace, numbers: string, type?: string): string {
-  const present = ownBlocks(workspace);
-  if (present.length === 0) return "There is nothing to delete.";
+function deleteMany(workspace: Blockly.Workspace, numbers: string): string {
+  if (ownBlocks(workspace).length === 0) return "There is nothing to delete.";
 
-  const wanted = parseWanted(numbers);
+  const wanted = parseNumbers(numbers);
   if (!wanted) return "I am not sure which blocks you mean.";
-
-  const resolved = type === undefined ? null : resolveBlockType(type);
-  if (type !== undefined && !resolved) return `I do not know a block called ${type}.`;
-
-  if (wanted.kind === "all" && !resolved) {
-    // Blockly's own clear rather than disposing one by one: it takes the undo
-    // stack and everything else hanging off the workspace with it.
-    workspace.clear();
-    forgetEveryBlock();
-    numberBlocks(workspace);
-    return `Deleted ${countOf(present.length)}. The workspace is empty.`;
-  }
 
   // Every block is found before any is removed: deleting one renumbers the
   // rest, so resolving as we went would make the second number mean something
   // else by the time we reached it.
-  const doomed =
-    wanted.kind === "all"
-      ? present.filter((block) => block.type === resolved)
-      : wanted.numbers
-          .map((n) => findBlockByNumber(workspace, n))
-          .filter((block): block is Blockly.Block => block !== null)
-          .filter((block) => resolved === null || block.type === resolved);
+  const found = wanted
+    .map((n) => findBlockByNumber(workspace, n))
+    .filter((block): block is Blockly.Block => block !== null);
 
-  const unique = [...new Set(doomed)];
-  if (unique.length === 0) {
-    return resolved
-      ? `I cannot find a ${spokenName(resolved)} block.`
-      : "I cannot find those blocks.";
-  }
+  const unique = [...new Set(found)];
+  if (unique.length === 0) return "I cannot find those blocks.";
 
   for (const block of unique) {
     forgetBlock(block);
@@ -317,8 +288,7 @@ function deleteMany(workspace: Blockly.Workspace, numbers: string, type?: string
   }
   numberBlocks(workspace);
 
-  const what = resolved ? `, all of them ${spokenName(resolved)}` : "";
-  return andWhatIsLeft(`Deleted ${countOf(unique.length)}${what}`, workspace);
+  return andWhatIsLeft(`Deleted ${countOf(unique.length)}`, workspace);
 }
 
 /**
@@ -387,7 +357,7 @@ export const VOICE_ACTIONS = {
 
   deleteBlocks: defineAction({
     description:
-      "Delete blocks: one, several, or every one. " +
+      "Delete blocks: one by its number or name, or several by their numbers. " +
       "Omit everything to delete the block that was just added.",
     params: {
       number: {
@@ -397,8 +367,8 @@ export const VOICE_ACTIONS = {
       numbers: {
         type: "string",
         description:
-          "Several blocks at once: the numbers shown on them, like '2, 4', " +
-          "or the word 'all' for every block. 'all' with a type deletes every block of that kind.",
+          "Several blocks at once: the numbers shown on them, separated by commas, like '2, 4'. " +
+          "To clear the workspace, list every block's number.",
       },
       type: {
         type: "string",
