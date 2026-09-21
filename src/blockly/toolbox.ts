@@ -25,8 +25,6 @@ interface Category {
   contents: readonly BlockEntry[];
 }
 
-// `as const` is what gives BlockType its literal union; `satisfies` keeps the
-// shape checked without widening it back to string.
 const numberSlot = (value: number) => ({ shadow: { type: "math_number", fields: { NUM: value } } });
 const textSlot = (value: string) => ({ shadow: { type: "text", fields: { TEXT: value } } });
 
@@ -166,13 +164,6 @@ function normalise(value: string): string {
     .replace(/ block$/, "");
 }
 
-/**
- * Resolves whatever the agent sent to a type we ship, or null.
- *
- * The enum steers the model towards type ids but enforces nothing, so a spoken
- * word still arrives sometimes. Rejecting "repeat" would dead-end the one
- * sentence the README teaches.
- */
 /** The shadow defaults for a type, for whoever is making the block. */
 export function slotDefaults(type: BlockType): SlotDefaults | undefined {
   return ENTRIES.find((entry) => entry.type === type)?.inputs;
@@ -189,6 +180,13 @@ export function spokenName(type: string): string {
   return ENTRIES.find((entry) => entry.type === type)?.say[0] ?? type;
 }
 
+/**
+ * Resolves whatever the agent sent to a type we ship, or null.
+ *
+ * The enum steers the model towards type ids but enforces nothing, so a spoken
+ * word still arrives sometimes. Rejecting "repeat" would dead-end the one
+ * sentence the README teaches.
+ */
 export function resolveBlockType(value: string): BlockType | null {
   const wanted = normalise(value);
 

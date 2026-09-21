@@ -94,10 +94,25 @@ export function drawSprite(
   ctx.restore();
 }
 
+/**
+ * `width` is a plain number on a canvas or a bitmap and an SVGAnimatedLength on
+ * an SVG image, so the union has no one property to read.
+ */
+function isSized(source: CanvasImageSource): source is CanvasImageSource & {
+  width: number;
+  height: number;
+} {
+  return (
+    "width" in source &&
+    "height" in source &&
+    typeof source.width === "number" &&
+    typeof source.height === "number"
+  );
+}
+
 function imageSize(image: CanvasImageSource): { width: number; height: number } {
   if (typeof HTMLImageElement !== "undefined" && image instanceof HTMLImageElement) {
     return { width: image.naturalWidth, height: image.naturalHeight };
   }
-  const sized = image as { width?: number; height?: number };
-  return { width: sized.width ?? 0, height: sized.height ?? 0 };
+  return isSized(image) ? { width: image.width, height: image.height } : { width: 0, height: 0 };
 }
