@@ -1,3 +1,4 @@
+import { BlockSvg, ConnectionType, serialization } from "blockly/core";
 import type { VoxideActionConfig } from "@voxide/react";
 import { defineAction } from "@/voice/define-action";
 import { getActiveWorkspace } from "@/blockly/active-workspace";
@@ -10,9 +11,7 @@ import { isProgramRunning, runProgram, stopProgram } from "@/run/runner";
 // Every capability the agent can invoke. One block, one connection or one value
 // per utterance, and never `dangerous: true` — it asks for a click to confirm.
 
-// Blockly is imported inside the handlers, not at the top: the voice layer is
-// eager, so a static import drags ~800 kB back into the entry chunk. By the
-// time a handler runs, the editor chunk has already loaded it.
+type ConnectionTypeValue = (typeof ConnectionType)[keyof typeof ConnectionType];
 
 function describeMiss(type?: string, number?: number): string {
   if (number !== undefined) return `There is no block ${number}.`;
@@ -20,7 +19,7 @@ function describeMiss(type?: string, number?: number): string {
   return "I am not sure which block you mean.";
 }
 
-export async function addBlock({ type }: { type: string }): Promise<string> {
+export function addBlock({ type }: { type: string }): string {
   const workspace = getActiveWorkspace();
 
   // Against our toolbox, not Blockly's registry: the enum only steers the
@@ -30,7 +29,6 @@ export async function addBlock({ type }: { type: string }): Promise<string> {
     return `I do not know a block called ${type}.`;
   }
 
-  const { BlockSvg, serialization } = await import("blockly/core");
   // Through the serialiser rather than newBlock: newBlock makes no shadows, so
   // a block with value inputs would arrive with holes in it, and filling a hole
   // takes a block dropped in by hand.
@@ -62,7 +60,7 @@ export async function addBlock({ type }: { type: string }): Promise<string> {
  * Blockly refuses connections that make no sense, so a wrong pairing is a
  * spoken "that does not fit" rather than a broken program.
  */
-export async function attachBlock({
+export function attachBlock({
   type,
   number,
   to,
@@ -72,7 +70,7 @@ export async function attachBlock({
   number?: number;
   to?: string;
   toNumber?: number;
-}): Promise<string> {
+}): string {
   const workspace = getActiveWorkspace();
 
   const child = resolveBlock(workspace, type, number !== undefined ? { number } : {});
@@ -95,8 +93,6 @@ export async function attachBlock({
       : describeMiss(to, toNumber);
   }
 
-  const { ConnectionType } = await import("blockly/core");
-
   // A shadow counts as open: it is a default, and Blockly puts it back if the
   // block covering it is taken away again. Without this, giving blocks their
   // slot defaults would be what stops a real block from ever going in one.
@@ -109,8 +105,9 @@ export async function attachBlock({
           (!connection.targetConnection || connection.targetBlock()?.isShadow() === true),
       );
 
-  type ConnectionTypeValue = (typeof ConnectionType)[keyof typeof ConnectionType];
-
+  // Unreachable until a sensing block lands: nothing a child can ask for
+  // reports a value yet, which is why DESIGN.md's known gaps leave `repeat
+  // until` with an empty hexagon.
   if (child.outputConnection) {
     for (const connection of openInputs(ConnectionType.INPUT_VALUE)) {
       if (connection?.connect(child.outputConnection)) {
@@ -147,7 +144,7 @@ export async function attachBlock({
  * names which. Left out where there is only one, and where there is more than
  * one it is asked for rather than guessed.
  */
-export async function setParam({
+export function setParam({
   type,
   number,
   value,
@@ -157,7 +154,7 @@ export async function setParam({
   number?: number;
   value: string;
   slot?: string;
-}): Promise<string> {
+}): string {
   const workspace = getActiveWorkspace();
 
   const block = resolveBlock(workspace, type, number !== undefined ? { number } : {});
@@ -166,7 +163,6 @@ export async function setParam({
   const change = setFieldValue(block, value, slot);
   if (!change.ok) return change.spoken;
 
-  const { BlockSvg } = await import("blockly/core");
   if (block instanceof BlockSvg) {
     selectOnly(block);
     revealBlock(workspace, block);

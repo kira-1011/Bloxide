@@ -15,7 +15,6 @@ import {
 const store = createStore<SpriteState>()(() => DEFAULT_SPRITE);
 
 export const getSpriteState = (): SpriteState => store.getState();
-export const subscribeToSprite = store.subscribe;
 
 /**
  * Every value the sprite holds is clamped here rather than by whoever is

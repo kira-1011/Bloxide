@@ -3,6 +3,16 @@
 Progress on Bloxide, newest first. Written for anyone following the build, not
 just developers — see the Changelog section of AGENTS.md.
 
+## 2026-09-22
+
+### Changed
+
+- **One place to look when a run goes wrong.** The output panel under the
+  editor is gone — the sprite has spoken in a bubble since the block set
+  changed, so the panel only ever sat there empty. If a program does fail, it
+  now says so beside Run and Stop, where the child was already looking to start
+  it.
+
 ## 2026-09-20
 
 ### Added

@@ -15,7 +15,7 @@ import {
   VOICE_ACTIONS,
 } from "@/voice/handlers";
 import { isProgramRunning } from "@/run/runner";
-import { getSpriteState, resetSprite, subscribeToSprite } from "@/sprite/sprite-store";
+import { getSpriteState, resetSprite, spriteStore } from "@/sprite/sprite-store";
 import { BLOCK_TYPES } from "@/blockly/toolbox";
 
 initBlocklyLocale();
@@ -132,10 +132,10 @@ describe("addBlock", () => {
     expect(workspace.getAllBlocks(false)).toHaveLength(0);
   });
 
-  it("refuses when no workspace is open", async () => {
+  it("refuses when no workspace is open", () => {
     setActiveWorkspace(null);
 
-    await expect(addBlock({ type: "bloxide_move" })).rejects.toThrow("No workspace is open yet.");
+    expect(() => addBlock({ type: "bloxide_move" })).toThrow("No workspace is open yet.");
   });
 });
 
@@ -260,7 +260,7 @@ describe("run and stop", () => {
     await setParam({ value: "hi" });
 
     const said: (string | null)[] = [];
-    const unsubscribe = subscribeToSprite(() => said.push(getSpriteState().saying));
+    const unsubscribe = spriteStore.subscribe(() => said.push(getSpriteState().saying));
     startProgram();
     await vi.waitFor(() => expect(isProgramRunning()).toBe(false));
     unsubscribe();

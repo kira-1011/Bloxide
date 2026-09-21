@@ -4,7 +4,7 @@ import "@/blocks/sprite-blocks";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { setActiveWorkspace } from "@/blockly/active-workspace";
 import { initBlocklyLocale } from "@/blockly/locale";
-import { describeProgram } from "@/blockly/program-state";
+import { describeProgram } from "@/voice/program-state";
 import { moveSteps, resetSprite, turnDegrees } from "@/sprite/sprite-store";
 
 initBlocklyLocale();

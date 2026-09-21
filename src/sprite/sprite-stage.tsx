@@ -18,6 +18,8 @@ export function SpriteStage() {
   const sprite = useSprite();
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
+  // Sizing is separate from painting because setting width or height clears the
+  // canvas: doing it on every sprite change would blank the stage mid-run.
   useEffect(() => {
     const canvas = canvasRef.current;
     const context = canvas?.getContext("2d");
@@ -28,6 +30,11 @@ export function SpriteStage() {
     canvas.width = STAGE_WIDTH * ratio;
     canvas.height = STAGE_HEIGHT * ratio;
     context.setTransform(ratio, 0, 0, ratio, 0, 0);
+  }, []);
+
+  useEffect(() => {
+    const context = canvasRef.current?.getContext("2d");
+    if (!context) return;
 
     const paint = () => {
       // drawSprite decides whether the art is usable; an image that failed to
@@ -52,7 +59,7 @@ export function SpriteStage() {
         className="w-full max-w-[480px] rounded-xl border border-slate-200 bg-white"
         style={{ aspectRatio: `${STAGE_WIDTH} / ${STAGE_HEIGHT}` }}
       />
-      {!sprite.visible && (
+      {sprite.visible ? null : (
         <p className="text-sm text-slate-500">
           Sprite is hidden — say <strong>show</strong>
         </p>
