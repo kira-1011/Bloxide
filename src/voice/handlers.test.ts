@@ -8,6 +8,7 @@ import { initBlocklyLocale } from "@/blockly/locale";
 import {
   addBlock,
   attachBlock,
+  deleteAllBlocks,
   deleteBlock,
   haltProgram,
   setParam,
@@ -92,8 +93,8 @@ describe("addBlock", () => {
 
   it("says the block's name back, not its type id", async () => {
     // "Added a bloxide_move block" is not a sentence to say to a child.
-    expect(await addBlock({ type: "bloxide_move" })).toBe("Added a move block");
-    expect(await addBlock({ type: "controls_repeat_ext" })).toBe("Added a repeat block");
+    expect(await addBlock({ type: "bloxide_move" })).toContain("Added a move block");
+    expect(await addBlock({ type: "controls_repeat_ext" })).toContain("Added a repeat block");
   });
 
   it("refuses a real Blockly block we do not ship", async () => {
@@ -166,7 +167,7 @@ describe("attachBlock", () => {
     await addBlock({ type: "bloxide_forever" });
     await addBlock({ type: "bloxide_say" });
 
-    expect(await attachBlock({ to: "forever" })).toBe("Put it inside the forever block");
+    expect(await attachBlock({ to: "forever" })).toContain("Put it inside the forever block");
   });
 
   it("puts a block under one that takes nothing inside", async () => {
@@ -175,7 +176,7 @@ describe("attachBlock", () => {
 
     const spoken = await attachBlock({ to: "hide" });
 
-    expect(spoken).toBe("Put it under the hide block");
+    expect(spoken).toContain("Put it under the hide block");
     expect(workspace.getTopBlocks(false)).toHaveLength(1);
   });
 
@@ -211,6 +212,51 @@ describe("attachBlock", () => {
   });
 });
 
+describe("deleteAllBlocks", () => {
+  it("empties the workspace so starting over does not need a mouse", async () => {
+    await addBlock({ type: "move" });
+    await addBlock({ type: "repeat" });
+    await addBlock({ type: "say" });
+
+    const spoken = deleteAllBlocks({});
+
+    expect(workspace.getAllBlocks(false)).toHaveLength(0);
+    expect(spoken).toContain("3 blocks");
+    expect(spoken).toContain("empty");
+  });
+
+  it("deletes only the kind it was given", async () => {
+    await addBlock({ type: "move" });
+    await addBlock({ type: "move" });
+    await addBlock({ type: "say" });
+
+    const spoken = deleteAllBlocks({ type: "move" });
+
+    const left = workspace.getAllBlocks(false).filter((block) => !block.isShadow());
+    expect(left.map((block) => block.type)).toEqual(["bloxide_say"]);
+    expect(spoken).toContain("2 blocks");
+  });
+
+  it("says so rather than claiming a change when there is nothing to delete", () => {
+    expect(deleteAllBlocks({})).toBe("There is nothing to delete.");
+  });
+
+  it("refuses a kind it does not ship", async () => {
+    await addBlock({ type: "move" });
+
+    expect(deleteAllBlocks({ type: "jump" })).toContain("do not know");
+    expect(workspace.getAllBlocks(false).filter((b) => !b.isShadow())).toHaveLength(1);
+  });
+
+  it("forgets the block the next sentence would have acted on", async () => {
+    await addBlock({ type: "move" });
+    deleteAllBlocks({});
+
+    // "make it ten steps" must not reach a block that no longer exists.
+    expect(setParam({ value: "10" })).toContain("not sure which block");
+  });
+});
+
 describe("deleteBlock", () => {
   it("deletes the block just added when no type is given", async () => {
     await addBlock({ type: "bloxide_move" });
@@ -218,7 +264,7 @@ describe("deleteBlock", () => {
     const spoken = deleteBlock({});
 
     expect(workspace.getAllBlocks(false)).toHaveLength(0);
-    expect(spoken).toBe("Deleted the move block");
+    expect(spoken).toContain("Deleted the move block");
   });
 
   it("deletes a named block", async () => {
@@ -288,7 +334,7 @@ describe("referring by number", () => {
 
     const spoken = deleteBlock({ number: badgeOf("controls_repeat_ext") });
 
-    expect(spoken).toBe("Deleted the repeat block");
+    expect(spoken).toContain("Deleted the repeat block");
     expect(ownBlocks().map((block) => block.type)).toEqual(["bloxide_say"]);
   });
 
@@ -300,7 +346,7 @@ describe("referring by number", () => {
     // A misheard type with the right number still lands on the right block.
     const spoken = deleteBlock({ number: badgeOf("bloxide_say"), type: "repeat" });
 
-    expect(spoken).toBe("Deleted the say block");
+    expect(spoken).toContain("Deleted the say block");
   });
 
   it("says so when no block wears that number", async () => {
@@ -363,7 +409,7 @@ describe("numbers stay usable without waiting for Blockly's events", () => {
     await addBlock({ type: "controls_repeat_ext" });
     await addBlock({ type: "bloxide_say" });
 
-    expect(deleteBlock({ number: badgeOf("bloxide_say") })).toBe("Deleted the say block");
+    expect(deleteBlock({ number: badgeOf("bloxide_say") })).toContain("Deleted the say block");
   });
 });
 

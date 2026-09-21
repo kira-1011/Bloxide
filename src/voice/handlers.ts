@@ -1,10 +1,16 @@
+import type * as Blockly from "blockly/core";
 import { BlockSvg, ConnectionType, serialization } from "blockly/core";
 import type { VoxideActionConfig } from "@voxide/react";
 import { defineAction } from "@/voice/define-action";
 import { getActiveWorkspace } from "@/blockly/active-workspace";
 import { setFieldValue } from "@/blockly/block-fields";
-import { numberBlocks, revealBlock, selectOnly } from "@/blockly/block-view";
-import { forgetBlock, rememberBlock, resolveBlock } from "@/blockly/block-reference";
+import { getBlockNumber, numberBlocks, revealBlock, selectOnly } from "@/blockly/block-view";
+import {
+  forgetBlock,
+  forgetEveryBlock,
+  rememberBlock,
+  resolveBlock,
+} from "@/blockly/block-reference";
 import { BLOCK_NAMES, resolveBlockType, slotDefaults, spokenName } from "@/blockly/toolbox";
 import { isProgramRunning, runProgram, stopProgram } from "@/run/runner";
 
@@ -12,6 +18,20 @@ import { isProgramRunning, runProgram, stopProgram } from "@/run/runner";
 // per utterance, and never `dangerous: true` — it asks for a click to confirm.
 
 type ConnectionTypeValue = (typeof ConnectionType)[keyof typeof ConnectionType];
+
+/**
+ * Says which block it was, because the agent cannot see that yet.
+ *
+ * Every tool result carries the workspace back to the agent, but the SDK takes
+ * that snapshot *before* the action runs — so a block added in this breath is
+ * missing from it, and the blocks that were renumbered around it still read as
+ * they were. The result is the only channel that reflects the change, so the
+ * number rides home on it. DESIGN.md asks for exactly this sentence.
+ */
+function andItsNumber(said: string, block: Blockly.Block): string {
+  const number = getBlockNumber(block);
+  return number === null ? said : `${said}. It is block ${number}.`;
+}
 
 function describeMiss(type?: string, number?: number): string {
   if (number !== undefined) return `There is no block ${number}.`;
@@ -52,7 +72,7 @@ export function addBlock({ type }: { type: string }): string {
   // renumber until after this returns and the next spoken number would miss.
   numberBlocks(workspace);
 
-  return `Added a ${spokenName(resolved)} block`;
+  return andItsNumber(`Added a ${spokenName(resolved)} block`, block);
 }
 
 /**
@@ -112,7 +132,7 @@ export function attachBlock({
     for (const connection of openInputs(ConnectionType.INPUT_VALUE)) {
       if (connection?.connect(child.outputConnection)) {
         numberBlocks(workspace);
-        return `Put it in the ${spokenName(parent.type)} block`;
+        return andItsNumber(`Put it in the ${spokenName(parent.type)} block`, child);
       }
     }
   }
@@ -122,13 +142,13 @@ export function attachBlock({
     for (const connection of openInputs(ConnectionType.NEXT_STATEMENT)) {
       if (connection?.connect(child.previousConnection)) {
         numberBlocks(workspace);
-        return `Put it inside the ${spokenName(parent.type)} block`;
+        return andItsNumber(`Put it inside the ${spokenName(parent.type)} block`, child);
       }
     }
     if (parent.nextConnection && !parent.nextConnection.targetConnection) {
       if (parent.nextConnection.connect(child.previousConnection)) {
         numberBlocks(workspace);
-        return `Put it under the ${spokenName(parent.type)} block`;
+        return andItsNumber(`Put it under the ${spokenName(parent.type)} block`, child);
       }
     }
   }
@@ -169,7 +189,57 @@ export function setParam({
   }
   rememberBlock(block);
 
-  return change.spoken;
+  return andItsNumber(change.spoken, block);
+}
+
+/** Counted after the fact: what the workspace holds, not what we meant to remove. */
+function ownBlocks(workspace: Blockly.Workspace): Blockly.Block[] {
+  return workspace.getAllBlocks(false).filter((block) => !block.isShadow());
+}
+
+/**
+ * Clears the workspace, or every block of one kind.
+ *
+ * Starting over has to be sayable. Emptying the workspace by hand means
+ * dragging each block to the bin one at a time, which is the thing our users
+ * cannot do — without this, the only way out of a tangled program is a mouse.
+ */
+export function deleteAllBlocks({ type }: { type?: string }): string {
+  const workspace = getActiveWorkspace();
+  const before = ownBlocks(workspace);
+  if (before.length === 0) return "There is nothing to delete.";
+
+  if (type === undefined) {
+    // Blockly's own clear, rather than disposing block by block: it takes the
+    // undo stack and everything hanging off the workspace with it.
+    workspace.clear();
+    forgetEveryBlock();
+    numberBlocks(workspace);
+    return `Deleted ${countOf(before.length)}. The workspace is empty.`;
+  }
+
+  const resolved = resolveBlockType(type);
+  if (!resolved) return `I do not know a block called ${type}.`;
+
+  const matches = before.filter((block) => block.type === resolved);
+  if (matches.length === 0) return `I cannot find a ${spokenName(resolved)} block.`;
+
+  for (const block of matches) {
+    forgetBlock(block);
+    // healStack, so blocks under a deleted one join up rather than orphaning.
+    block.dispose(true);
+  }
+  numberBlocks(workspace);
+
+  const left = ownBlocks(workspace).length;
+  const spoken = `Deleted ${countOf(matches.length)}, all of them ${spokenName(resolved)}`;
+  return left === 0
+    ? `${spoken}. The workspace is empty.`
+    : `${spoken}. ${countOf(left)} left, numbered from one.`;
+}
+
+function countOf(n: number): string {
+  return n === 1 ? "1 block" : `${n} blocks`;
 }
 
 export function deleteBlock({ type, number }: { type?: string; number?: number }): string {
@@ -184,7 +254,13 @@ export function deleteBlock({ type, number }: { type?: string; number?: number }
   block.dispose(true);
   numberBlocks(workspace);
 
-  return `Deleted the ${removed} block`;
+  // The block it named is gone, so there is no number to give back — but every
+  // number after it has just moved up, and the agent's copy of the workspace
+  // predates that. Saying how many are left is what stops it aiming at a
+  // number that now belongs to something else.
+  const left = workspace.getAllBlocks(false).filter((other) => !other.isShadow()).length;
+  if (left === 0) return `Deleted the ${removed} block. The workspace is empty.`;
+  return `Deleted the ${removed} block. ${left} ${left === 1 ? "block is" : "blocks are"} left, numbered from one.`;
 }
 
 /**
@@ -267,6 +343,20 @@ export const VOICE_ACTIONS = {
       },
     },
     handler: (args) => deleteBlock(args),
+  }),
+
+  deleteAllBlocks: defineAction({
+    description:
+      "Delete every block at once, or every block of one kind. " +
+      "This is what 'start again', 'clear everything' or 'delete them all' mean.",
+    params: {
+      type: {
+        type: "string",
+        enum: [...BLOCK_NAMES],
+        description: "Only delete blocks of this kind. Omit to empty the workspace.",
+      },
+    },
+    handler: (args) => deleteAllBlocks(args),
   }),
 
   setParam: defineAction({

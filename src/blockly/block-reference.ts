@@ -28,6 +28,11 @@ export function forgetBlock(block: Blockly.Block): void {
   if (lastBlockId === block.id) lastBlockId = null;
 }
 
+/** After the workspace is cleared, "it" refers to nothing at all. */
+export function forgetEveryBlock(): void {
+  lastBlockId = null;
+}
+
 interface ResolveOptions {
   /** Id to skip, so a block is never resolved as its own target. */
   readonly exclude?: string;
