@@ -29,12 +29,8 @@ export function forgetBlock(block: Blockly.Block): void {
 }
 
 /**
- * Forgets the remembered block if it is no longer on the workspace.
- *
- * Deleting a block takes everything inside it, so the one "it" refers to can
- * go without ever being named — and a later "make it ten steps" would be
- * aiming at a block that no longer exists. Asking the workspace afterwards is
- * surer than tracking what a deletion carried off with it.
+ * Deleting a block takes everything inside it, so the one "it" refers to can go
+ * unnamed. Asking the workspace beats tracking what a deletion carried off.
  */
 export function forgetMissingBlock(workspace: Blockly.Workspace): void {
   if (lastBlockId !== null && !workspace.getBlockById(lastBlockId)) lastBlockId = null;
@@ -48,12 +44,8 @@ interface ResolveOptions {
 }
 
 /**
- * Resolves the reference, most specific first: the number on screen, then the
- * named type, then the implicit target.
- *
- * A number is unambiguous and survives a misheard word, which is why it wins.
- * Positional reference ("the second repeat") is not built, so a named type
- * still resolves to the last match in workspace order.
+ * Most specific first: the number on screen, then the named type, then the
+ * block just touched. A number survives a misheard word, which is why it wins.
  */
 export function resolveBlock(
   workspace: Blockly.Workspace,

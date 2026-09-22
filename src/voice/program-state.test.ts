@@ -1,6 +1,6 @@
 import * as Blockly from "blockly/core";
 import "blockly/blocks";
-import "@/blocks/sprite-blocks";
+import "@/blocks/custom-blocks";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { setActiveWorkspace } from "@/blockly/active-workspace";
 import { initBlocklyLocale } from "@/blockly/locale";

@@ -157,12 +157,8 @@ const ENTRIES: readonly ResolvedEntry[] = CATEGORIES.flatMap((category) => [...c
 export const BLOCK_TYPES: readonly BlockType[] = ENTRIES.map((entry) => entry.type);
 
 /**
- * The same blocks again, as the words the agent chooses between.
- *
- * Not the type ids. Asked to pick `bloxide_move` out of a list of internal
- * ids, the agent stopped calling `addBlock` at all — it answered "I've added a
- * move block" and did nothing, while every capability without an id enum kept
- * working. These are the words a child says, and `resolveBlockType` takes them.
+ * The enum the agent picks from. Offered the type ids instead, it stopped
+ * calling `addBlock` at all and claimed the block was added.
  */
 export const BLOCK_NAMES: readonly string[] = ENTRIES.map((entry) => entry.say[0] ?? entry.type);
 
@@ -176,24 +172,14 @@ export function slotDefaults(type: BlockType): SlotDefaults | undefined {
   return ENTRIES.find((entry) => entry.type === type)?.inputs;
 }
 
-/**
- * What to call a block out loud.
- *
- * The first spoken name, not the type id: "Added a bloxide_move block" is not
- * a sentence to say to a child. Derived from the same list the agent picks
- * from, so a confirmation can never name something that cannot be asked for.
- */
+/** "Added a bloxide_move block" is not a sentence to say to a child. */
 export function spokenName(type: string): string {
   return ENTRIES.find((entry) => entry.type === type)?.say[0] ?? type;
 }
 
 /**
- * Resolves whatever the agent sent to a type we ship, or null.
- *
- * The enum offers spoken names, but it enforces nothing and a type id still
- * arrives sometimes — from a stale manifest, or a model that has seen one.
- * Both are accepted; only an ambiguous word is refused, so "turn" cannot
- * silently become one of the two turns.
+ * A spoken name or a type id, since the enum enforces nothing and a stale
+ * manifest still sends ids. An ambiguous word matches nothing and is refused.
  */
 export function resolveBlockType(value: string): BlockType | null {
   const wanted = normalise(value);

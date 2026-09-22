@@ -1,5 +1,5 @@
 import { javascriptGenerator, Order } from "blockly/javascript";
-import "@/blocks/sprite-blocks";
+import "@/blocks/custom-blocks";
 
 // What each block runs. The generated code talks to `__sprite`, the one name
 // the runner injects for the sprite API, so a new block never widens the

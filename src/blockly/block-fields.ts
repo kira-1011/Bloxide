@@ -36,12 +36,8 @@ export function editableField(block: Blockly.Block): Blockly.Field | null {
 }
 
 /**
- * Every value a block holds: its own fields, plus the one field of each shadow
- * sitting in a value input.
- *
- * A shadow is where a value lives now — `go to x () y ()` keeps two of them —
- * so the field on the block itself is no longer the whole story. Inputs name
- * their slot, which is what makes "the x one" sayable.
+ * A block's own fields plus the one field of each shadow in a value input,
+ * since that is where values live now. Inputs name the slot, so "x" is sayable.
  */
 export function valueSlots(block: Blockly.Block): readonly ValueSlot[] {
   const own = block.inputList.flatMap((input) =>

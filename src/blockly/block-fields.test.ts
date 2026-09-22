@@ -1,6 +1,6 @@
 import * as Blockly from "blockly/core";
 import "blockly/blocks";
-import "@/blocks/sprite-blocks";
+import "@/blocks/custom-blocks";
 import { beforeEach, describe, expect, it } from "vitest";
 import { editableField, setFieldValue, valueSlots } from "@/blockly/block-fields";
 import { initBlocklyLocale } from "@/blockly/locale";

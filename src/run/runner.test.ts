@@ -1,6 +1,6 @@
 import * as Blockly from "blockly/core";
 import "blockly/blocks";
-import "@/blocks/sprite-blocks";
+import "@/blocks/custom-blocks";
 import { afterEach, describe, expect, it } from "vitest";
 import { isProgramRunning, runProgram, runStore, stopProgram } from "@/run/runner";
 import { initBlocklyLocale } from "@/blockly/locale";

@@ -1,13 +1,10 @@
 import { common } from "blockly/core";
 
-// Bloxide's own blocks: the twelve DESIGN.md names, as JSON definitions.
+// Bloxide's own blocks, as JSON definitions.
 //
-// Every value is an `input_value` rather than an inline `field_number`, so a
-// block carries no editable field of its own. That is what keeps the "a block
-// holds at most one value" invariant true while `go to x () y ()` still has two
-// slots, and it is the shape Scratch and Blockly's own `controls_repeat_ext`
-// use. The defaults that fill those inputs are shadow blocks, and they live
-// with the palette rather than here.
+// Every value is an `input_value`, never an inline field, so a block carries no
+// editable field of its own — the shape Scratch uses, and what lets
+// `go to x () y ()` hold two values. Their shadow defaults live with the palette.
 
 /** Repeat is Blockly's own: same shape, and its generator already traps. */
 export const REPEAT_BLOCK_TYPE = "controls_repeat_ext";

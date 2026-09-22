@@ -1,9 +1,10 @@
 // oxlint-disable jsx-a11y/prefer-tag-over-role -- a canvas cannot be an <img>, and the
 // role is the only thing that gets it announced at all.
 import { useEffect, useRef } from "react";
+import { useStore } from "zustand";
 import { describeSprite, STAGE_HEIGHT, STAGE_WIDTH } from "@/sprite/sprite-state";
 import { drawSprite } from "@/sprite/draw-sprite";
-import { useSprite } from "@/sprite/use-sprite";
+import { spriteStore } from "@/sprite/sprite-store";
 
 const SPRITE_SRC = "/sprite/robot.png";
 
@@ -15,7 +16,7 @@ const costume = typeof Image === "undefined" ? null : new Image();
 if (costume) costume.src = SPRITE_SRC;
 
 export function SpriteStage() {
-  const sprite = useSprite();
+  const sprite = useStore(spriteStore);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   // Sizing is separate from painting because setting width or height clears the

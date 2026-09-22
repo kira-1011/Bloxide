@@ -1,6 +1,6 @@
 import * as Blockly from "blockly/core";
 import "blockly/blocks";
-import "@/blocks/sprite-blocks";
+import "@/blocks/custom-blocks";
 import { describe, expect, it } from "vitest";
 import { initBlocklyLocale } from "@/blockly/locale";
 import { BLOCK_TYPES, resolveBlockType, spokenName, TOOLBOX_CATEGORIES } from "@/blockly/toolbox";
