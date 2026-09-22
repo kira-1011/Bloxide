@@ -1,6 +1,6 @@
 import * as Blockly from "blockly/core";
 import "blockly/blocks";
-import "@/blocks/sprite-blocks";
+import "@/blocks/custom-blocks";
 import { beforeEach, describe, expect, it } from "vitest";
 import { findBlockByNumber } from "@/blockly/block-reference";
 import { getBlockNumber, numberBlocks } from "@/blockly/block-view";

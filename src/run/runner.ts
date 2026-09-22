@@ -1,6 +1,6 @@
 import type * as Blockly from "blockly/core";
 import { javascriptGenerator } from "blockly/javascript";
-import "@/blocks/sprite-generators";
+import "@/blocks/custom-block-generators";
 import { createStore } from "zustand/vanilla";
 import { ProgramStopped } from "@/run/program-stopped";
 import { createSpriteApi, type RunSession } from "@/sprite/sprite-api";
@@ -91,15 +91,9 @@ export async function runProgram(workspace: Blockly.Workspace): Promise<void> {
   };
 
   /**
-   * One frame per time round a loop, which is what makes a program watchable.
-   *
-   * Scratch runs at 30 frames a second and a loop yields once an iteration, so
-   * a repeat takes about a thirtieth of a second a time and a child can watch
-   * the sprite go. Yielding straight back instead finishes a four-times loop in
-   * under a frame: the sprite is simply somewhere else, and nothing was shown.
-   *
-   * Straight-line blocks still run inside one frame, as they do in Scratch.
-   * Going through `sleep` rather than a bare timer keeps Stop instant.
+   * A frame each time round a loop, as Scratch does, or a four-times loop
+   * finishes inside one frame and the sprite never appears to move. Through
+   * `sleep` rather than a bare timer, so Stop still lands at once.
    */
   const tick = async (): Promise<void> => {
     session.guard();

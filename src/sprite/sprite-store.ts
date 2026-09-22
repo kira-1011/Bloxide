@@ -16,14 +16,7 @@ const store = createStore<SpriteState>()(() => DEFAULT_SPRITE);
 
 export const getSpriteState = (): SpriteState => store.getState();
 
-/**
- * Every value the sprite holds is clamped here rather than by whoever is
- * calling, so a program, a voice command and a reset can only ever leave it
- * somewhere legal.
- *
- * A non-finite number does nothing at all: NaN coordinates draw no sprite and
- * report no error, which is the worst of both.
- */
+/** NaN coordinates draw no sprite and report no error, which is the worst of both. */
 function real(value: number): boolean {
   return Number.isFinite(value);
 }

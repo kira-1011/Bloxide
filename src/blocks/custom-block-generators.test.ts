@@ -2,8 +2,8 @@ import * as Blockly from "blockly/core";
 import "blockly/blocks";
 import { javascriptGenerator } from "blockly/javascript";
 import { beforeEach, describe, expect, it } from "vitest";
-import { REPEAT_BLOCK_TYPE, SPRITE_BLOCK_TYPES } from "@/blocks/sprite-blocks";
-import "@/blocks/sprite-generators";
+import { REPEAT_BLOCK_TYPE, SPRITE_BLOCK_TYPES } from "@/blocks/custom-blocks";
+import "@/blocks/custom-block-generators";
 import { initBlocklyLocale } from "@/blockly/locale";
 
 initBlocklyLocale();

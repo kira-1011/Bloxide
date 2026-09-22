@@ -42,12 +42,8 @@ function describeSprite(sprite: SpriteState): SpriteSnapshot {
 }
 
 /**
- * What the agent is told about the workspace before each utterance.
- *
- * Blockly's serialiser is the source: it already knows how blocks nest and what
- * their fields hold, and a second description of the same thing would drift.
- * Ids and coordinates are left out — they are re-read every turn and mean
- * nothing to the agent.
+ * What the agent is told before each utterance. Blockly's serialiser is the
+ * source, so nothing here can drift from the workspace it describes.
  */
 export function describeProgram(): ProgramSnapshot {
   // Read live in both branches: the sprite outlives the workspace, so a

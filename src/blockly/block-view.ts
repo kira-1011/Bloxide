@@ -54,15 +54,9 @@ export function getBlockNumber(block: Blockly.Block): number | null {
 }
 
 /**
- * Brings a block into view when it is not already there.
- *
- * Blockly clamps scrolling to the content, so with a short program a new block
- * is always on screen. Once a program is taller than the viewport it is not:
- * blocks are laid out from the top, and someone working at the bottom would
- * hear that a block was added and see nothing change.
- *
- * Only when it is needed — recentring on every action would move the workspace
- * under someone who is reading it.
+ * Scrolls to a block only when it is off screen: someone working at the bottom
+ * of a long program would otherwise hear it was added and see nothing, but
+ * recentring every time would move the workspace under them as they read.
  */
 export function revealBlock(workspace: Blockly.WorkspaceSvg, block: Blockly.BlockSvg): void {
   const view = workspace.getMetricsManager().getViewMetrics(true);
@@ -78,12 +72,8 @@ export function revealBlock(workspace: Blockly.WorkspaceSvg, block: Blockly.Bloc
 }
 
 /**
- * Selects one block and only that block.
- *
- * `select()` paints the highlight but does not take it off whatever held it —
- * since Blockly 13 selection follows focus, so a block selected that way stays
- * lit and every subject the conversation ever had ends up highlighted at once.
- * Focusing the block is what actually moves the selection.
+ * `select()` only paints: since Blockly 13 selection follows focus, so using it
+ * leaves every block that was ever the subject lit at once.
  */
 export function selectOnly(block: Blockly.BlockSvg): void {
   getFocusManager().focusNode(block);

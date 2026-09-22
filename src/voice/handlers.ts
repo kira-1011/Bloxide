@@ -21,13 +21,8 @@ import { isProgramRunning, runProgram, stopProgram } from "@/run/runner";
 type ConnectionTypeValue = (typeof ConnectionType)[keyof typeof ConnectionType];
 
 /**
- * Says which block it was, because the agent cannot see that yet.
- *
- * Every tool result carries the workspace back to the agent, but the SDK takes
- * that snapshot *before* the action runs — so a block added in this breath is
- * missing from it, and the blocks that were renumbered around it still read as
- * they were. The result is the only channel that reflects the change, so the
- * number rides home on it. DESIGN.md asks for exactly this sentence.
+ * The SDK snapshots the workspace *before* an action runs, so the result is the
+ * only channel that can tell the agent about a number that just changed.
  */
 function andItsNumber(said: string, block: Blockly.Block): string {
   const number = getBlockNumber(block);
@@ -158,12 +153,8 @@ export function attachBlock({
 }
 
 /**
- * Changes a value written on a block: how many times a loop repeats, what a
- * piece of text says, which comparison is made.
- *
- * A block can hold more than one — `go to x () y ()` holds two — so `slot`
- * names which. Left out where there is only one, and where there is more than
- * one it is asked for rather than guessed.
+ * `go to x () y ()` holds two values, so `slot` names which. With one it is
+ * left out; with two an unnamed slot is asked about rather than guessed.
  */
 export function setParam({
   type,
@@ -194,21 +185,10 @@ export function setParam({
 }
 
 /**
- * The block numbers a sentence named.
+ * Numbers only: what "all of them" means is the agent's to work out.
  *
- * A list of numbers and nothing else: what "all of them" or "the loops" means
- * is the agent's to work out, and it reads the numbered workspace before every
- * utterance. Words are not accepted here, so there is no second, smaller
- * understanding of English sitting behind the one that can actually listen.
- *
- * It arrives as a string because the schema carries only strings and numbers.
- */
-/**
- * A part is a block number only if it survives the round trip.
- *
- * `Number` is generous — "1e2" is 100, "0x10" is 16, "+1" is 1 — and a wrong
- * deletion cannot be undone by speaking. Reading it back and comparing is what
- * rejects the clever spellings without teaching this file to read digits.
+ * `Number` is generous — "1e2" is 100, "0x10" is 16 — so the round trip is what
+ * rejects those, and a wrong deletion cannot be undone by speaking.
  */
 function blockNumber(part: string): number | null {
   const parsed = Number(part);

@@ -5,6 +5,32 @@ just developers — see the Changelog section of AGENTS.md.
 
 ## 2026-09-22
 
+### Added
+
+- **Starting over is something you can say.** "Clear everything and start
+  again" empties the workspace, and blocks can go several at a time — "delete
+  blocks one and three". Emptying it by hand meant dragging each block to the
+  bin one at a time, which is the one thing our children cannot do, so until
+  now the only way out of a tangled program was a mouse.
+
+### Fixed
+
+- **Asking for a block works.** The assistant had stopped adding blocks
+  altogether while still answering "I've added a move block" — the list it
+  chose from was written in names nobody says out loud. It now picks from the
+  words a child uses, and says them back: "add a loop", "make him disappear"
+  and "add something that makes it pause" all land on the right block.
+- **You can watch the sprite go.** A four-times loop used to finish faster than
+  a single frame, so the sprite did not travel — it was simply somewhere else
+  when the program ended. Loops now run at Scratch's speed, a step every
+  thirtieth of a second, and a child can see the repeat happening. Stop still
+  halts it at once.
+- **A value lands on the block you meant.** Saying "walk a hundred steps" and
+  then "turn ninety degrees" could put the ninety on the walking block: adding
+  a block renumbers the others, and the assistant was told the numbering as it
+  had been a moment before. Every answer now carries the number with it —
+  "Added a move block. It is block 3."
+
 ### Changed
 
 - **One place to look when a run goes wrong.** The output panel under the
@@ -12,6 +38,13 @@ just developers — see the Changelog section of AGENTS.md.
   changed, so the panel only ever sat there empty. If a program does fail, it
   now says so beside Run and Stop, where the child was already looking to start
   it.
+
+### Next
+
+- Numbers still shift when a block is added, so a badge means "second from the
+  top" rather than "this block". Naming a block and having the name stick is
+  the next thing the reference system needs.
+- Nobody under twelve has tried any of this yet.
 
 ## 2026-09-20
 

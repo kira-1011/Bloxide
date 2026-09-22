@@ -1,7 +1,7 @@
 import * as Blockly from "blockly/core";
 import "blockly/blocks";
 import { beforeEach, describe, expect, it } from "vitest";
-import { REPEAT_BLOCK_TYPE, SPRITE_BLOCK_TYPES } from "@/blocks/sprite-blocks";
+import { REPEAT_BLOCK_TYPE, SPRITE_BLOCK_TYPES } from "@/blocks/custom-blocks";
 import { initBlocklyLocale } from "@/blockly/locale";
 
 initBlocklyLocale();

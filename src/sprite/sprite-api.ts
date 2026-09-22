@@ -39,12 +39,8 @@ function milliseconds(seconds: number): number {
 
 export function createSpriteApi(session: RunSession): SpriteApi {
   /**
-   * Guard, change, then yield.
-   *
-   * Guarding first is what keeps a replaced run from moving the sprite out from
-   * under the one that replaced it. The yield afterwards is what lets the
-   * screen catch up: the commands are instant, but a stack of them with nothing
-   * between would paint once at the end and read as the sprite teleporting.
+   * Guard first, so a replaced run cannot move the sprite under the one that
+   * replaced it; yield after, or a run of commands paints only once at the end.
    */
   const step = async (change: () => void): Promise<void> => {
     session.guard();
