@@ -14,16 +14,14 @@ describe("the Bloxide renderer", () => {
     expect(WORKSPACE_OPTIONS.renderer).toBe(RENDERER_NAME);
   });
 
-  it("draws round corners and no notch", () => {
+  it("draws round corners and keeps the puzzle notch", () => {
     const constants = Blockly.blockRendering.init(RENDERER_NAME, BLOXIDE_THEME).getConstants();
 
     expect(constants.CORNER_RADIUS).toBe(16);
-    expect(constants.NOTCH.height).toBe(0);
-    expect(constants.NOTCH.width).toBeGreaterThan(0);
+    expect(constants.NOTCH.height).toBeGreaterThan(0);
   });
 
   it("still lets blocks join under and inside each other", () => {
-    // The notch is only drawn; connections are Blockly's own and must not care.
     const workspace = new Blockly.Workspace();
     const repeat = workspace.newBlock("controls_repeat_ext");
     const move = workspace.newBlock("bloxide_move");

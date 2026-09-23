@@ -5,9 +5,8 @@ import { blockRendering, registry, utils, zelos } from "blockly/core";
 
 export const RENDERER_NAME = "bloxide";
 
-// DESIGN.md draws blocks as plain rounded rectangles. The puzzle notch is a
-// drag affordance, telling the eye where a block would click in; a child who
-// cannot drag never uses it, so it only adds noise to read around.
+// Rounded as DESIGN.md draws them, keeping zelos's puzzle notch: it is how a
+// child who has met Scratch recognises a block that joins to others.
 const CORNER_RADIUS = 16;
 
 // A C-block has to read as holding what is inside it: a wide arm, the inner
@@ -40,23 +39,9 @@ class BloxideConstants extends zelos.ConstantProvider {
     // a value ("repeat 10 times", "move 10 steps"), so blocks and C-block
     // headers would come in two heights.
     this.DUMMY_INPUT_MIN_HEIGHT = ROW_HEIGHT;
-    // The notch keeps its width so connection positions do not move, but has no
-    // depth: blocks meet along a straight edge.
-    this.NOTCH_HEIGHT = 0;
     // Added to the mouth's height under the inner blocks; the drawer spends half
     // of it above them.
     this.STATEMENT_BOTTOM_SPACER = MOUTH_PADDING * 2;
-  }
-
-  override makeNotch() {
-    const width = this.NOTCH_WIDTH;
-    return {
-      type: this.SHAPES.NOTCH,
-      width,
-      height: 0,
-      pathLeft: `h ${width}`,
-      pathRight: `h ${-width}`,
-    };
   }
 
   /** The mouth's own corners stay tight, as the design draws them, however round the outside is. */
@@ -85,6 +70,10 @@ class BloxideRenderInfo extends zelos.RenderInfo {
     for (const row of this.rows) {
       for (const element of row.elements) {
         if (!blockRendering.Types.isStatementInput(element)) continue;
+        // Zelos draws the mouth's notch and seats the inner block from this one
+        // offset, so moving it sets the blocks in from the arm and keeps the
+        // notch above them lined up.
+        element.notchOffset += INNER_INSET;
         let joins = 0;
         for (
           let block = element.connectedBlock?.getNextBlock();
@@ -106,18 +95,13 @@ class BloxideRenderInfo extends zelos.RenderInfo {
 }
 
 class BloxideDrawer extends zelos.Drawer {
-  // Every measurable shares one notch offset, so no constant can set the inner
-  // blocks in from the arm: zelos always puts their edge on it. Moving the
-  // connection is what moves the blocks attached to it.
+  // Down only: the inset from the arm comes from the notch offset, above.
   protected override positionStatementInputConnection_(row: blockRendering.Row): void {
     super.positionStatementInputConnection_(row);
     const connection = row.getLastInput()?.connectionModel;
     if (!connection) return;
     const offset = connection.getOffsetInBlock();
-    connection.setOffsetInBlock(
-      offset.x + (this.info_.RTL ? -INNER_INSET : INNER_INSET),
-      offset.y + MOUTH_PADDING,
-    );
+    connection.setOffsetInBlock(offset.x, offset.y + MOUTH_PADDING);
   }
 
   protected override positionNextConnection_(): void {
