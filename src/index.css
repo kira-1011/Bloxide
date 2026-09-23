@@ -16,8 +16,16 @@
   --color-cat-look: #0e7490;
   --color-cat-control: #c2410c;
 
-  /* Voxide's widget owns the listening states and their colours. */
   --color-brand: #2563eb;
+
+  /* DESIGN.md's three voice states: grey asleep, blue listening, purple
+     answering. Each fill has a darker ink for the words beside it. */
+  --color-voice-asleep: #cbd5e1;
+  --color-voice-asleep-ink: #475569;
+  --color-voice-listening: #2563eb;
+  --color-voice-listening-ink: #1d4ed8;
+  --color-voice-answering: #7c3aed;
+  --color-voice-answering-ink: #6d28d9;
 
   --color-run: #047857;
   --color-stop: #b91c1c;

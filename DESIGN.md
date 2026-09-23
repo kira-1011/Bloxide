@@ -62,12 +62,20 @@ Each category owns one fill. White text sits on all of them at 4.5:1 or better.
 
 ### Voice states
 
-Voxide's widget owns them. It draws the mic, the waveform, the transcript and
-the listening states, and its colours are set in the Voxide dashboard, not
-here. A second set of states in our own code would only drift from the SDK.
+Three states, one colour each, always in the same place at the bottom of the
+screen, so the child never has to ask whether they are being heard. The mic is
+104px.
 
-What we own is where it sits: inline along the bottom, in a place that never
-moves, at a size a child who cannot aim can still find.
+| State     | Voxide status                  | Fill      | Words                        |
+| --------- | ------------------------------ | --------- | ---------------------------- |
+| Asleep    | idle, armed (wake word), error | `#CBD5E1` | Say "Hey Bloxide", or press  |
+| Listening | connecting, listening          | `#2563EB` | I am listening…, and I heard |
+| Answering | thinking, executing, speaking  | `#7C3AED` | The one-sentence reply       |
+
+We draw these ourselves from the SDK's live session state (`useVoxideVoice`)
+rather than using Voxide's widget. The widget is a floating corner launcher; it
+cannot sit inline, and a control that moves cannot be aimed at. The SDK stays
+the source of the state, so ours cannot drift from what the session is doing.
 
 | Token           | Hex       | Used for                       |
 | --------------- | --------- | ------------------------------ |
@@ -131,7 +139,7 @@ running.
 | rail +  | numbered, highlighted          | stage, speech |
 | list    |                                | bubble        |
 +---------+--------------------------------+---------------+
-| Voice bar: the Voxide widget, then Run and Stop           |
+| Voice bar: the mic, what it heard, then Run and Stop      |
 +----------------------------------------------------------+
 ```
 
@@ -142,7 +150,8 @@ running.
   screen, so the badge and the assistant can never disagree.
 - **Sprite** fills its column and speaks in a bubble. There is no separate
   output panel; `say` renders where the child is already looking.
-- **Voice bar** holds the Voxide widget inline, plus Run and Stop. It is a
+- **Voice bar** holds the mic, what it heard and what it answered, plus Run
+  and Stop. It is a
   fixed strip rather than a floating launcher, because knowing whether you were
   heard matters more than any single control, and a control that moves cannot
   be aimed at.
@@ -156,8 +165,8 @@ in the voice bar.
 Rules:
 
 - **Confirm with the fact, not the request.** "Added a say block. It is block
-  4." Read the value back out of the block after setting it. The widget speaks
-  it and shows it in its transcript.
+  4." Read the value back out of the block after setting it. The agent speaks
+  it and the voice bar shows it.
 - **Ask only for the missing piece.** Heard "make it steps" with no number, ask
   "How many steps?" Never "please repeat that".
 - **Say when nothing changed.** A scroll or a failed match states that the

@@ -1,4 +1,6 @@
-import type { ReactNode } from "react";
+import { useEffect, type ReactNode } from "react";
+import { startVoice, voice } from "@/voice/client";
+import { VoiceMic } from "@/voice/voice-mic";
 
 interface VoiceBarProps {
   readonly running: boolean;
@@ -9,20 +11,19 @@ interface VoiceBarProps {
 }
 
 /**
- * The fixed strip along the bottom of the editor.
- *
- * Voxide's own widget owns the mic, the waveform, the transcript and the
- * listening states, and its appearance is set in the dashboard; a second set
- * here would only drift from the SDK. What this bar contributes is the one
- * thing the widget cannot: a place that never moves, large enough for a child
- * who cannot aim, plus the two program controls.
+ * The fixed strip along the bottom of the editor: the mic, what it heard and
+ * answered, and the two program controls. A place that never moves, because a
+ * child who cannot aim cannot chase a floating launcher.
  */
 export function VoiceBar({ running, error, onRun, onStop }: VoiceBarProps) {
+  useEffect(() => {
+    void startVoice();
+  }, []);
+
   return (
-    <div className="flex h-36 shrink-0 items-center gap-6 border-t-[3px] border-blue-200 bg-surface px-7">
-      {/* The inline Voxide widget sits here. It mounts at the app root so a
-          call survives navigation, so this bar renders nothing for it. */}
-      <div aria-live="polite" className="flex min-w-0 grow flex-col gap-2">
+    <div className="flex h-43 shrink-0 items-center gap-6 border-t-[3px] border-blue-200 bg-surface px-7">
+      {voice ? <VoiceMic client={voice} /> : <div className="grow" />}
+      <div aria-live="polite" className="flex max-w-72 shrink-0 flex-col gap-2 empty:hidden">
         {running ? (
           <p className="font-display text-2xl font-bold text-run">Running your program…</p>
         ) : null}
