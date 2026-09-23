@@ -109,8 +109,11 @@ const DEFINITIONS = [
   },
   {
     type: "bloxide_forever",
-    message0: "forever %1",
-    args0: [{ type: "input_statement", name: "DO" }],
+    message0: "forever",
+    // Its own row, as Blockly's repeat does it: sharing the label's row would
+    // make the whole word the arm and open the mouth beside it.
+    message1: "%1",
+    args1: [{ type: "input_statement", name: "DO" }],
     previousStatement: null,
     // No nextStatement: forever never ends, so nothing can follow it. Scratch
     // caps the block for the same reason.

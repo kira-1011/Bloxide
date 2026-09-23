@@ -29,7 +29,7 @@ describe("catalogue", () => {
   });
 
   it("drops the nest from a block that holds others", () => {
-    // "forever %1" is a place for blocks, not a value anyone can speak.
+    // Its mouth is a place for blocks, not a value anyone can speak.
     expect(reads("bloxide_forever")).toBe("forever");
   });
 
