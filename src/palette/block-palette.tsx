@@ -17,7 +17,12 @@ export function BlockPalette() {
 
   const jumpTo = (id: CategoryId) => {
     setCurrent(id);
-    headings.current.get(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    // DESIGN.md allows no motion at all under reduced motion, not just less.
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    headings.current.get(id)?.scrollIntoView({
+      behavior: reduce ? "instant" : "smooth",
+      block: "start",
+    });
   };
 
   // The same path the voice command takes, so a block placed by hand is

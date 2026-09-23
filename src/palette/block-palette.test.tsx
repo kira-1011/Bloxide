@@ -14,6 +14,7 @@ initBlocklyLocale();
 beforeEach(() => {
   // jsdom has no layout, so nothing implements it.
   Element.prototype.scrollIntoView = vi.fn();
+  window.matchMedia = vi.fn().mockReturnValue({ matches: false });
 });
 
 afterEach(() => {
@@ -49,6 +50,17 @@ describe("BlockPalette", () => {
 
     const scrolled = vi.mocked(Element.prototype.scrollIntoView).mock.instances[0];
     expect(scrolled).toHaveTextContent("SAY");
+  });
+
+  it("jumps without scrolling motion when the child's system asks for less", () => {
+    window.matchMedia = vi.fn().mockReturnValue({ matches: true });
+    render(<BlockPalette />);
+
+    fireEvent.click(rail("Say"));
+
+    expect(Element.prototype.scrollIntoView).toHaveBeenCalledWith(
+      expect.objectContaining({ behavior: "instant" }),
+    );
   });
 
   it("marks where you are, and only there", () => {
