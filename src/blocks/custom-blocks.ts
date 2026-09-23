@@ -116,6 +116,12 @@ const DEFINITIONS = [
   },
 ] as const;
 
+/**
+ * The definitions themselves, so the palette can draw a block the way Blockly
+ * draws it rather than keeping a second copy of the wording.
+ */
+export const BLOCK_DEFINITIONS = DEFINITIONS;
+
 /** Every type this module defines, plus the repeat block it borrows. */
 export const SPRITE_BLOCK_TYPES: readonly string[] = [
   ...DEFINITIONS.map((definition) => definition.type),

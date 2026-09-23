@@ -1,9 +1,12 @@
+import { BLOCK_DEFINITIONS } from "@/blocks/custom-blocks";
 import { TOOLBOX_CATEGORIES } from "@/blockly/toolbox";
 
 /**
- * What the palette draws, derived from the toolbox rather than written out
- * again. A block the child can be given is therefore always a block the
- * palette shows, and neither list can quietly fall behind the other.
+ * What the palette draws, derived from the blocks themselves.
+ *
+ * The list comes from the toolbox and the wording from each block's own
+ * definition, so the palette cannot show a block that does not exist, miss one
+ * that does, or word one differently from the way Blockly draws it.
  */
 
 export type CategoryId = "movement" | "say" | "look" | "control";
@@ -40,40 +43,73 @@ export const CATEGORIES: readonly Category[] = TOOLBOX_CATEGORIES.map((category)
   return { id, label: category.name, fill: FILLS[id] };
 });
 
+interface Argument {
+  readonly type: string;
+  readonly name: string;
+}
+
+interface Definition {
+  readonly message0: string;
+  readonly args0?: readonly Argument[];
+}
+
 /**
- * How each block reads on screen. The toolbox knows the words a child may say
- * and the value each slot starts with, but not the order they are spoken in,
- * which is what a block has to show.
+ * Repeat is Blockly's block, so its wording lives in Blockly's own messages
+ * rather than in ours. Written out here because reading `Blockly.Msg` would
+ * make the palette wait on the locale being installed first.
  */
-const WORDING: Record<string, readonly BlockPart[]> = {
-  bloxide_move: [{ word: "move" }, { slot: "10" }, { word: "steps" }],
-  bloxide_turn_right: [{ word: "turn right" }, { slot: "15" }, { word: "degrees" }],
-  bloxide_turn_left: [{ word: "turn left" }, { slot: "15" }, { word: "degrees" }],
-  bloxide_go_to: [{ word: "go to x" }, { slot: "0" }, { word: "y" }, { slot: "0" }],
-  bloxide_say_for: [
-    { word: "say" },
-    { slot: "Hello!" },
-    { word: "for" },
-    { slot: "2" },
-    { word: "secs" },
-  ],
-  bloxide_say: [{ word: "say" }, { slot: "Hello!" }],
-  bloxide_change_size: [{ word: "change size by" }, { slot: "10" }],
-  bloxide_hide: [{ word: "hide" }],
-  bloxide_show: [{ word: "show" }],
-  bloxide_wait: [{ word: "wait" }, { slot: "1" }, { word: "seconds" }],
-  controls_repeat_ext: [{ word: "repeat" }, { slot: "10" }],
-  bloxide_forever: [{ word: "forever" }],
+const BORROWED: Record<string, Definition> = {
+  controls_repeat_ext: {
+    message0: "repeat %1 times",
+    args0: [{ type: "input_value", name: "TIMES" }],
+  },
 };
+
+const DEFINITIONS: ReadonlyMap<string, Definition> = new Map<string, Definition>([
+  ...BLOCK_DEFINITIONS.map((definition): [string, Definition] => [definition.type, definition]),
+  ...Object.entries(BORROWED),
+]);
+
+/** The value a slot starts out holding, as the shadow block spells it. */
+function slotValue(inputs: Record<string, unknown> | undefined, name: string): string {
+  const slot = inputs?.[name] as { shadow?: { fields?: Record<string, unknown> } } | undefined;
+  const fields = slot?.shadow?.fields;
+  const value = fields?.["NUM"] ?? fields?.["TEXT"];
+  return value === undefined ? "" : String(value);
+}
+
+/**
+ * Turns "go to x %1 y %2" into the words and slots a child sees.
+ *
+ * A `%1` standing for a statement input is dropped: that is where blocks nest,
+ * not a value anyone can say.
+ */
+function partsOf(type: string, inputs: Record<string, unknown> | undefined): BlockPart[] {
+  const definition = DEFINITIONS.get(type);
+  if (!definition) return [{ word: type }];
+
+  const parts: BlockPart[] = [];
+  for (const piece of definition.message0.split(/(%\d+)/)) {
+    const placeholder = /^%(\d+)$/.exec(piece);
+    if (!placeholder) {
+      const word = piece.trim();
+      if (word) parts.push({ word });
+      continue;
+    }
+
+    const argument = definition.args0?.[Number(placeholder[1]) - 1];
+    if (!argument || argument.type !== "input_value") continue;
+    parts.push({ slot: slotValue(inputs, argument.name) });
+  }
+  return parts;
+}
 
 /** Parts are authored in order and never reorder, so position names them. */
 export const PALETTE_BLOCKS: readonly PaletteBlock[] = TOOLBOX_CATEGORIES.flatMap((category) =>
   category.contents.map((entry) => ({
     id: entry.type,
     category: category.name.toLowerCase() as CategoryId,
-    // A block with no wording still shows, under its first spoken name, rather
-    // than going missing from the one list that says what may be asked for.
-    parts: (WORDING[entry.type] ?? [{ word: entry.say[0] ?? entry.type }]).map((part, index) => ({
+    parts: partsOf(entry.type, entry.inputs).map((part, index) => ({
       ...part,
       key: `${entry.type}-${index}`,
     })),
