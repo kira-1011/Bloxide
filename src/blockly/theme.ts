@@ -26,6 +26,9 @@ export const BLOXIDE_THEME: Theme = Theme.defineTheme("bloxide", {
     control_blocks: { colourPrimary: CONTROL },
   },
   fontStyle: { family: '"Baloo 2", cursive', weight: "600", size: BLOCK_TEXT_PT },
+  // The soft ring DESIGN.md draws round the block the next sentence acts on.
+  // Zelos's default ring width is already close to the design's.
+  componentStyles: { selectedGlowColour: "#FDE68A" },
   // A hat is a mouse instruction drawn on a block; DESIGN.md forbids one.
   startHats: false,
 });

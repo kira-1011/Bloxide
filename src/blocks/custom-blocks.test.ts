@@ -54,3 +54,21 @@ describe("sprite blocks", () => {
     expect(workspace.newBlock("bloxide_wait").getStyleName()).toBe("control_blocks");
   });
 });
+
+describe("the text slot", () => {
+  it("is its value alone, with no quote marks beside it", () => {
+    const fields = workspace.newBlock("text").inputList.flatMap((input) => input.fieldRow);
+
+    expect(fields.map((field) => field.name)).toEqual(["TEXT"]);
+  });
+
+  it("still turns into a string", async () => {
+    const { javascriptGenerator } = await import("blockly/javascript");
+    const block = workspace.newBlock("text");
+    block.setFieldValue("Hello!", "TEXT");
+
+    javascriptGenerator.init(workspace);
+    const [code] = javascriptGenerator.blockToCode(block) ?? [];
+    expect(code).toBe("'Hello!'");
+  });
+});

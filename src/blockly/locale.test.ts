@@ -26,6 +26,16 @@ describe("initBlocklyLocale", () => {
     );
   });
 
+  it('drops the "do" Blockly writes under repeat', async () => {
+    const { initBlocklyLocale } = await import("@/blockly/locale");
+
+    initBlocklyLocale();
+
+    expect(setLocale).toHaveBeenCalledWith(
+      expect.objectContaining({ CONTROLS_REPEAT_INPUT_DO: "" }),
+    );
+  });
+
   it("is idempotent, so a remounting editor installs once", async () => {
     const { initBlocklyLocale } = await import("@/blockly/locale");
 

@@ -1,4 +1,7 @@
-import { common } from "blockly/core";
+// Before our definitions, so the text slot below replaces Blockly's rather
+// than being replaced by it.
+import "blockly/blocks";
+import { Blocks, common } from "blockly/core";
 
 // Bloxide's own blocks, as JSON definitions.
 //
@@ -133,3 +136,21 @@ export const SPRITE_BLOCK_TYPES: readonly string[] = [
 export const SPRITE_BLOCKS = common.createBlockDefinitionsFromJsonArray([...DEFINITIONS]);
 
 common.defineBlocks(SPRITE_BLOCKS);
+
+/**
+ * Blockly's own `text`, without the quote marks. A block whose only content is
+ * one field is drawn by zelos as that field alone, so a text slot becomes the
+ * same white pill a number is, as DESIGN.md draws both. The field keeps
+ * Blockly's name, so the generator and everything that sets a value still work.
+ */
+const TEXT_SLOT = common.createBlockDefinitionsFromJsonArray([
+  {
+    type: "text",
+    message0: "%1",
+    args0: [{ type: "field_input", name: "TEXT", text: "" }],
+    output: "String",
+    style: "text_blocks",
+  },
+]).text;
+// Assigned rather than passed to defineBlocks, which warns on every override.
+if (TEXT_SLOT) Blocks["text"] = TEXT_SLOT;

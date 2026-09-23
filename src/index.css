@@ -48,14 +48,15 @@ body {
 /* A ring and full opacity keep the badge from reading as block content —
    beside a number block's value it otherwise looks like another digit. */
 .bloxideNumberBadge {
-  fill: #0f172a;
-  stroke: #ffffff;
-  stroke-width: 1.5;
+  fill: rgb(255 255 255 / 0.28);
+  stroke: rgb(255 255 255 / 0.8);
+  stroke-width: 2;
 }
 
 .bloxideNumberText {
   fill: #ffffff;
-  font-size: 9px;
+  font-family: var(--font-sans);
+  font-size: 15px;
   font-weight: 700;
 }
 

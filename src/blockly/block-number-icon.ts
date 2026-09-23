@@ -1,9 +1,9 @@
 import * as Blockly from "blockly/core";
 
-const BADGE = 14;
+const BADGE = 30;
 // Reported larger than the badge so the renderer leaves a gap: on a number
 // block the badge sits right beside the value and reads as another digit.
-const SIZE = 20;
+const SIZE = 38;
 
 /**
  * A block's number, as an Icon rather than an overlay of our own: Blockly

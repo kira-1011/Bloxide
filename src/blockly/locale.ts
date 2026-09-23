@@ -15,5 +15,6 @@ export function initBlocklyLocale(): void {
   const messages = Object.fromEntries(
     Object.entries(en).filter((entry): entry is [string, string] => typeof entry[1] === "string"),
   );
-  Blockly.setLocale(messages);
+  // "repeat 10 times" already says it all; DESIGN.md draws no "do" under it.
+  Blockly.setLocale({ ...messages, CONTROLS_REPEAT_INPUT_DO: "" });
 }
