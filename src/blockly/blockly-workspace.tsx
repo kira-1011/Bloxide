@@ -3,6 +3,8 @@ import { useBlocklyWorkspace } from "@/blockly/use-blockly-workspace";
 import { BlockPalette } from "@/palette/block-palette";
 import { useProgramRunner } from "@/run/use-program-runner";
 import { SpriteStage } from "@/sprite/sprite-stage";
+import { WorkspaceControls } from "@/blockly/workspace-controls";
+import { StageResizer } from "@/sprite/stage-resizer";
 import { VoiceBar } from "@/voice/voice-bar";
 
 /** Default export: the entry of the lazily loaded editor chunk. */
@@ -19,11 +21,15 @@ export default function BlocklyWorkspace() {
         <span className="font-display text-[26px] font-bold text-ink">Bloxide</span>
       </header>
 
-      {/* The stage gives way before the editor does, and past that the row
-          scrolls, so no zone is ever squeezed out of reach. */}
+      {/* The editor keeps a usable width, and past that the row scrolls, so no
+          zone is ever squeezed out of reach. */}
       <div className="flex min-h-0 grow overflow-x-auto">
         <BlockPalette />
-        <div ref={containerRef} className="min-w-[480px] grow" />
+        <div className="relative min-w-[480px] grow">
+          <div ref={containerRef} className="absolute inset-0" />
+          <WorkspaceControls workspaceRef={workspaceRef} />
+        </div>
+        <StageResizer />
         <SpriteStage />
       </div>
 

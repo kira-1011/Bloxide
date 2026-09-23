@@ -10,10 +10,18 @@ import {
   attachBlock,
   deleteBlocks,
   haltProgram,
+  resizeStage,
   setParam,
   startProgram,
   VOICE_ACTIONS,
+  zoom,
 } from "@/voice/handlers";
+import {
+  getStageWidth,
+  resetStageWidth,
+  STAGE_MAX_WIDTH,
+  setStageWidth,
+} from "@/sprite/stage-size";
 import { isProgramRunning } from "@/run/runner";
 import { getSpriteState, resetSprite, spriteStore } from "@/sprite/sprite-store";
 import { BLOCK_NAMES, resolveBlockType } from "@/blockly/toolbox";
@@ -525,5 +533,34 @@ describe("setParam", () => {
 
     expect(spoken).toContain("not a number");
     expect(slotValue(firstOfType("controls_repeat_ext"), "TIMES")).toBe(10);
+  });
+});
+
+describe("resizeStage", () => {
+  afterEach(() => {
+    resetStageWidth();
+  });
+
+  it("makes the stage bigger, and says so", () => {
+    const before = getStageWidth();
+
+    expect(resizeStage({ size: "bigger" })).toBe("Made the stage bigger.");
+    expect(getStageWidth()).toBeGreaterThan(before);
+  });
+
+  it("says when it cannot go any bigger", () => {
+    setStageWidth(STAGE_MAX_WIDTH);
+
+    expect(resizeStage({ size: "bigger" })).toBe("The stage is already as big as it goes.");
+  });
+
+  it("answers a word it does not know instead of guessing", () => {
+    expect(resizeStage({ size: "huge" })).toBe("I can make the stage bigger or smaller.");
+  });
+});
+
+describe("zoom", () => {
+  it("answers a word it does not know instead of guessing", () => {
+    expect(zoom({ direction: "sideways" })).toBe("I can zoom in, zoom out, or go back to normal.");
   });
 });

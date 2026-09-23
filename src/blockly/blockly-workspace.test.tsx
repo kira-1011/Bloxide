@@ -49,10 +49,14 @@ describe("BlocklyWorkspace", () => {
 
     const [element, options] = inject.mock.calls[0] as [HTMLElement, unknown];
     expect(options).toBe(WORKSPACE_OPTIONS);
-    // The canvas takes the leftover width; palette and stage flank it.
-    expect(element).toHaveClass("grow");
-    expect(element.previousElementSibling).toHaveTextContent("MOVEMENT");
-    expect(element.nextElementSibling).toContainElement(screen.getByRole("img"));
+    // The canvas's frame takes the leftover width, beside its own controls;
+    // the palette sits before it, the resizer and stage after.
+    const frame = element.parentElement;
+    expect(frame).toHaveClass("grow");
+    expect(frame).toContainElement(screen.getByRole("button", { name: "Zoom in" }));
+    expect(frame?.previousElementSibling).toHaveTextContent("MOVEMENT");
+    expect(frame?.nextElementSibling).toHaveAttribute("role", "separator");
+    expect(frame?.nextElementSibling?.nextElementSibling).toContainElement(screen.getByRole("img"));
   });
 
   it("offers run and stop from the voice bar", () => {
