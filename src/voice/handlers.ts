@@ -14,6 +14,9 @@ import {
 } from "@/blockly/block-reference";
 import { BLOCK_NAMES, resolveBlockType, slotDefaults, spokenName } from "@/blockly/toolbox";
 import { isProgramRunning, runProgram, stopProgram } from "@/run/runner";
+import { isZoomDirection, zoomWorkspace, ZOOM_DIRECTIONS } from "@/blockly/workspace-zoom";
+import { growStage } from "@/sprite/stage-size";
+import { isPaletteOpen, setPaletteOpen } from "@/palette/palette-store";
 
 // Every capability the agent can invoke. One block, one connection or one value
 // per utterance, and never `dangerous: true` — it asks for a click to confirm.
@@ -303,6 +306,30 @@ export function haltProgram(): string {
   return "Stopped";
 }
 
+export function zoom({ direction }: { direction: string }): string {
+  if (!isZoomDirection(direction)) return "I can zoom in, zoom out, or go back to normal.";
+  zoomWorkspace(getActiveWorkspace(), direction);
+  return direction === "reset" ? "Back to normal size." : `Zoomed ${direction}.`;
+}
+
+export function resizeStage({ size }: { size: string }): string {
+  if (size !== "bigger" && size !== "smaller") return "I can make the stage bigger or smaller.";
+  if (!growStage(size === "bigger" ? 1 : -1)) {
+    return `The stage is already as ${size === "bigger" ? "big" : "small"} as it goes.`;
+  }
+  return `Made the stage ${size}.`;
+}
+
+export function showBlocks({ visible }: { visible: string }): string {
+  if (visible !== "show" && visible !== "hide") return "I can show the blocks or hide them.";
+  const open = visible === "show";
+  if (isPaletteOpen() === open)
+    return open ? "The blocks are already showing." : "The blocks are already hidden.";
+  setPaletteOpen(open);
+  // Hidden blocks can still be asked for by name, and the child should know it.
+  return open ? "Showing the blocks." : "Hid the blocks. You can still ask for any block by name.";
+}
+
 export const VOICE_ACTIONS = {
   addBlock: defineAction({
     description: "Add a block to the workspace",
@@ -407,5 +434,42 @@ export const VOICE_ACTIONS = {
   stopProgram: defineAction({
     description: "Stop the running program",
     handler: () => haltProgram(),
+  }),
+  zoom: defineAction({
+    description: "Zoom the block workspace in or out, or back to normal size",
+    params: {
+      direction: {
+        type: "string",
+        required: true,
+        enum: [...ZOOM_DIRECTIONS],
+        description: "in, out, or reset for normal size",
+      },
+    },
+    handler: ({ direction }) => zoom({ direction }),
+  }),
+  showBlocks: defineAction({
+    description:
+      "Show or hide the list of blocks on the left, to make more room. Blocks can still be added by name while it is hidden.",
+    params: {
+      visible: {
+        type: "string",
+        required: true,
+        enum: ["show", "hide"],
+        description: "show to open the block list, hide to fold it away",
+      },
+    },
+    handler: ({ visible }) => showBlocks({ visible }),
+  }),
+  resizeStage: defineAction({
+    description: "Make the sprite stage bigger or smaller",
+    params: {
+      size: {
+        type: "string",
+        required: true,
+        enum: ["bigger", "smaller"],
+        description: "Which way to resize the stage",
+      },
+    },
+    handler: ({ size }) => resizeStage({ size }),
   }),
 } satisfies Record<string, VoxideActionConfig>;

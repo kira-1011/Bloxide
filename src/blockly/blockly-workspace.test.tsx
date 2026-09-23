@@ -44,20 +44,35 @@ afterEach(() => {
 });
 
 describe("BlocklyWorkspace", () => {
-  it("injects into the canvas between the controls and the output", () => {
+  it("injects into the canvas between the palette and the stage", () => {
     render(<BlocklyWorkspace />);
 
     const [element, options] = inject.mock.calls[0] as [HTMLElement, unknown];
     expect(options).toBe(WORKSPACE_OPTIONS);
-    // The canvas takes the leftover height; controls and output bracket it.
-    expect(element).toHaveClass("flex-1");
+    // The canvas's frame takes the leftover width, beside its own controls;
+    // the palette sits before it, the resizer and stage after.
+    const frame = element.parentElement;
+    expect(frame).toHaveClass("grow");
+    expect(frame).toContainElement(screen.getByRole("button", { name: "Zoom in" }));
+    expect(frame?.previousElementSibling).toHaveTextContent("MOVEMENT");
+    expect(frame?.nextElementSibling).toHaveAttribute("role", "separator");
+    expect(frame?.nextElementSibling?.nextElementSibling).toContainElement(screen.getByRole("img"));
   });
 
-  it("offers run and stop controls", () => {
+  it("offers run and stop from the voice bar", () => {
     render(<BlocklyWorkspace />);
 
     expect(screen.getByRole("button", { name: "Run program" })).toBeEnabled();
     expect(screen.getByRole("button", { name: "Stop program" })).toBeDisabled();
+  });
+
+  it("lays the editor out in four zones", () => {
+    render(<BlocklyWorkspace />);
+
+    expect(screen.getByRole("banner")).toHaveTextContent("Bloxide");
+    expect(screen.getByRole("heading", { name: "MOVEMENT" })).toBeInTheDocument();
+    expect(screen.getByRole("img")).toHaveAccessibleName(/^Sprite at/);
+    expect(screen.getByRole("button", { name: "Run program" })).toBeInTheDocument();
   });
 
   it("passes the shared options object, so a render never re-injects", () => {

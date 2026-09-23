@@ -1,15 +1,15 @@
 import type * as Blockly from "blockly/core";
+import { RENDERER_NAME } from "@/blockly/renderer";
 import { BLOXIDE_THEME } from "@/blockly/theme";
-import { TOOLBOX } from "@/blockly/toolbox";
 
 /** Module scope: a fresh object each render would re-inject the workspace. */
 export const WORKSPACE_OPTIONS: Blockly.BlocklyOptions = {
-  toolbox: TOOLBOX,
-  renderer: "zelos",
+  renderer: RENDERER_NAME,
   theme: BLOXIDE_THEME,
   media: "/blockly-media/",
   grid: { spacing: 24, length: 3, colour: "#e5e7eb", snap: true },
-  zoom: { controls: true, wheel: true, startScale: 0.9 },
+  // Zoom and delete are our own buttons (WorkspaceControls), drawn in the UI's style.
+  zoom: { controls: false, wheel: true, startScale: 0.9 },
   move: { scrollbars: true, drag: true, wheel: false },
-  trashcan: true,
+  trashcan: false,
 };

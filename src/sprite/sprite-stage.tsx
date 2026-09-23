@@ -5,6 +5,7 @@ import { useStore } from "zustand";
 import { describeSprite, STAGE_HEIGHT, STAGE_WIDTH } from "@/sprite/sprite-state";
 import { drawSprite } from "@/sprite/draw-sprite";
 import { spriteStore } from "@/sprite/sprite-store";
+import { stageSizeStore } from "@/sprite/stage-size";
 
 const SPRITE_SRC = "/sprite/robot.png";
 
@@ -17,6 +18,7 @@ if (costume) costume.src = SPRITE_SRC;
 
 export function SpriteStage() {
   const sprite = useStore(spriteStore);
+  const { width } = useStore(stageSizeStore);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   // Sizing is separate from painting because setting width or height clears the
@@ -52,12 +54,12 @@ export function SpriteStage() {
   }, [sprite]);
 
   return (
-    <div className="flex flex-col items-center gap-2 border-l border-slate-200 bg-slate-50 p-4">
+    <div className="flex shrink-0 flex-col items-center gap-2 bg-slate-50 p-4" style={{ width }}>
       <canvas
         ref={canvasRef}
         role="img"
         aria-label={describeSprite(sprite)}
-        className="w-full max-w-[480px] rounded-xl border border-slate-200 bg-white"
+        className="w-full rounded-xl border border-slate-200 bg-white"
         style={{ aspectRatio: `${STAGE_WIDTH} / ${STAGE_HEIGHT}` }}
       />
       {sprite.visible ? null : (

@@ -21,7 +21,6 @@ interface BlockEntry {
 interface Category {
   kind: "category";
   name: string;
-  categorystyle: string;
   contents: readonly BlockEntry[];
 }
 
@@ -37,7 +36,6 @@ const CATEGORIES = [
   {
     kind: "category",
     name: "Movement",
-    categorystyle: "movement_category",
     contents: [
       {
         kind: "block",
@@ -70,7 +68,6 @@ const CATEGORIES = [
   {
     kind: "category",
     name: "Say",
-    categorystyle: "say_category",
     contents: [
       {
         kind: "block",
@@ -84,7 +81,6 @@ const CATEGORIES = [
   {
     kind: "category",
     name: "Look",
-    categorystyle: "look_category",
     contents: [
       {
         kind: "block",
@@ -99,7 +95,6 @@ const CATEGORIES = [
   {
     kind: "category",
     name: "Control",
-    categorystyle: "control_category",
     contents: [
       {
         kind: "block",
@@ -120,25 +115,9 @@ const CATEGORIES = [
   },
 ] as const satisfies readonly Category[];
 
-/** The blocks a child may ask for, in the order DESIGN.md lists them. */
-export const TOOLBOX: Blockly.utils.toolbox.ToolboxDefinition = {
-  kind: "categoryToolbox",
-  // Copied because Blockly wants a mutable array and CATEGORIES is frozen.
-  contents: CATEGORIES.map((category) => ({
-    ...category,
-    contents: category.contents.map((entry) => ({
-      kind: entry.kind,
-      type: entry.type,
-      // The flyout draws the shadows too, so a block looks the same however it
-      // was made.
-      ...("inputs" in entry ? { inputs: entry.inputs } : {}),
-    })),
-  })),
-};
-
 export type BlockType = (typeof CATEGORIES)[number]["contents"][number]["type"];
 
-/** Typed view of the same data, so readers never cast TOOLBOX open. */
+/** Typed view of the same data, so readers never cast the const tuple open. */
 export const TOOLBOX_CATEGORIES: readonly Category[] = CATEGORIES;
 
 interface ResolvedEntry {

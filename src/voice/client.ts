@@ -16,3 +16,27 @@ export const voice: VoxideClient | null = publicKey
       // rather than from what it believes it did.
       .bindState(() => describeProgram())
   : null;
+
+let started: Promise<void> | null = null;
+
+/**
+ * Loads the dashboard's config and, if it asks for one, arms the wake word.
+ * Voxide's own widget did this; we draw our own mic, so we do it. Once per page,
+ * however many times a remount asks.
+ */
+export function startVoice(): Promise<void> {
+  if (!voice) return Promise.resolve();
+  const client = voice;
+  started ??= client
+    .init()
+    .then(() => {
+      // The dashboard's default is to arm; only an explicit false opts out.
+      const autoArm = client.agentConfig?.wakeWord?.autoArm !== false;
+      if (autoArm && client.isWakeWordAvailable()) client.armWakeWord();
+    })
+    .catch((error: unknown) => {
+      // The mic still offers press-to-talk, which reports its own failure.
+      console.warn("Voxide did not start", error);
+    });
+  return started;
+}

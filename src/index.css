@@ -1,22 +1,70 @@
 @import "tailwindcss";
 
+/* The tokens DESIGN.md defines. Components name the token, never the hex. */
+@theme {
+  --color-bg: #eff6ff;
+  --color-surface: #ffffff;
+  --color-surface-sunken: #f8fafc;
+  --color-ink: #0f172a;
+  --color-ink-muted: #64748b;
+  --color-edge: #dbeafe;
+  --color-stage: #e0f2fe;
+  --color-stage-edge: #bae6fd;
+
+  --color-cat-movement: #1d4ed8;
+  --color-cat-say: #a21caf;
+  --color-cat-look: #0e7490;
+  --color-cat-control: #c2410c;
+
+  --color-brand: #2563eb;
+
+  /* DESIGN.md's three voice states: grey asleep, blue listening, purple
+     answering. Each fill has a darker ink for the words beside it. */
+  --color-voice-asleep: #cbd5e1;
+  --color-voice-asleep-ink: #475569;
+  --color-voice-listening: #2563eb;
+  --color-voice-listening-ink: #1d4ed8;
+  --color-voice-answering: #7c3aed;
+  --color-voice-answering-ink: #6d28d9;
+
+  --color-run: #047857;
+  --color-stop: #b91c1c;
+  --color-highlight: #fde68a;
+
+  --font-display: "Baloo 2", cursive;
+  --font-sans: "Lexend", system-ui, sans-serif;
+
+  --radius-block: 16px;
+  --radius-panel: 24px;
+  --radius-action: 28px;
+
+  /* Our floor, not the usual 44px, which assumes motor control our users do
+     not have. */
+  --spacing-target: 60px;
+}
+
 html,
 body,
 #root {
   height: 100%;
 }
 
+body {
+  font-family: var(--font-sans);
+}
+
 /* A ring and full opacity keep the badge from reading as block content —
    beside a number block's value it otherwise looks like another digit. */
 .bloxideNumberBadge {
-  fill: #0f172a;
-  stroke: #ffffff;
-  stroke-width: 1.5;
+  fill: rgb(255 255 255 / 0.28);
+  stroke: rgb(255 255 255 / 0.8);
+  stroke-width: 2;
 }
 
 .bloxideNumberText {
   fill: #ffffff;
-  font-size: 9px;
+  font-family: var(--font-sans);
+  font-size: 15px;
   font-weight: 700;
 }
 

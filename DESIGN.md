@@ -53,22 +53,33 @@ Semantic tokens. Components reference the token, never the hex.
 
 Each category owns one fill. White text sits on all of them at 4.5:1 or better.
 
-| Category | Token                  | Hex       | Blocks                                          |
-| -------- | ---------------------- | --------- | ----------------------------------------------- |
-| Movement | `--color-cat-movement` | `#1D4ED8` | move, turn right, turn left, go to x y          |
-| Say      | `--color-cat-say`      | `#A21CAF` | say for secs, say                               |
-| Look     | `--color-cat-look`     | `#0E7490` | change size by, hide, show                      |
-| Control  | `--color-cat-control`  | `#C2410C` | wait, repeat, forever, repeat until, wait until |
+| Category | Token                  | Hex       | Blocks                                 |
+| -------- | ---------------------- | --------- | -------------------------------------- |
+| Movement | `--color-cat-movement` | `#1D4ED8` | move, turn right, turn left, go to x y |
+| Say      | `--color-cat-say`      | `#A21CAF` | say for secs, say                      |
+| Look     | `--color-cat-look`     | `#0E7490` | change size by, hide, show             |
+| Control  | `--color-cat-control`  | `#C2410C` | wait, repeat, forever                  |
 
 ### Voice states
 
-Three states, one colour each, never more.
+Three states, one colour each, always in the same place at the bottom of the
+screen, so the child never has to ask whether they are being heard. The mic is
+104px.
 
-| State     | Token                     | Hex       | Meaning                                   |
-| --------- | ------------------------- | --------- | ----------------------------------------- |
-| Asleep    | `--color-voice-asleep`    | `#CBD5E1` | Not recording. Waiting for the wake word. |
-| Listening | `--color-voice-listening` | `#2563EB` | Recording. Live transcript visible.       |
-| Answering | `--color-voice-answering` | `#7C3AED` | The assistant is reporting or asking.     |
+| State     | Voxide status                  | Fill      | Words                        |
+| --------- | ------------------------------ | --------- | ---------------------------- |
+| Asleep    | idle, armed (wake word), error | `#CBD5E1` | Say "Hey Bloxide", or press  |
+| Listening | connecting, listening          | `#2563EB` | I am listening…, and I heard |
+| Answering | thinking, executing, speaking  | `#7C3AED` | The one-sentence reply       |
+
+We draw these ourselves from the SDK's live session state (`useVoxideVoice`)
+rather than using Voxide's widget. The widget is a floating corner launcher; it
+cannot sit inline, and a control that moves cannot be aimed at. The SDK stays
+the source of the state, so ours cannot drift from what the session is doing.
+
+| Token           | Hex       | Used for                       |
+| --------------- | --------- | ------------------------------ |
+| `--color-brand` | `#2563EB` | The mark in the header, accent |
 
 ### Actions
 
@@ -78,9 +89,8 @@ Three states, one colour each, never more.
 | `--color-stop`      | `#B91C1C` | Stop                                        |
 | `--color-highlight` | `#FDE68A` | Ring on the block the last sentence touched |
 
-Purple belongs to the assistant. Do not use it for a block category.
-Green belongs to Run. Do not use it for confirmations, or a child reads a
-successful sentence as a running program.
+Green belongs to Run. Do not use it for anything else, or a child reads an
+ordinary message as a running program.
 
 ## Typography
 
@@ -129,7 +139,7 @@ running.
 | rail +  | numbered, highlighted          | stage, speech |
 | list    |                                | bubble        |
 +---------+--------------------------------+---------------+
-| Voice bar: state, mic, transcript, answer, Run, Stop     |
+| Voice bar: the mic, what it heard, then Run and Stop      |
 +----------------------------------------------------------+
 ```
 
@@ -140,8 +150,11 @@ running.
   screen, so the badge and the assistant can never disagree.
 - **Sprite** fills its column and speaks in a bubble. There is no separate
   output panel; `say` renders where the child is already looking.
-- **Voice bar** is the tallest fixed element on the page, because knowing
-  whether you were heard matters more than any single control.
+- **Voice bar** holds the mic, what it heard and what it answered, plus Run
+  and Stop. It is a
+  fixed strip rather than a floating launcher, because knowing whether you were
+  heard matters more than any single control, and a control that moves cannot
+  be aimed at.
 
 ## Voice feedback
 
@@ -152,7 +165,8 @@ in the voice bar.
 Rules:
 
 - **Confirm with the fact, not the request.** "Added a say block. It is block
-  4." Read the value back out of the block after setting it.
+  4." Read the value back out of the block after setting it. The agent speaks
+  it and the voice bar shows it.
 - **Ask only for the missing piece.** Heard "make it steps" with no number, ask
   "How many steps?" Never "please repeat that".
 - **Say when nothing changed.** A scroll or a failed match states that the
@@ -165,7 +179,10 @@ Rules:
 - No `dangerous: true` on a Voxide action. It demands a click to confirm.
 - No hat block that names a mouse. A program runs top to bottom when the child
   says "run the program".
-- No mode that hides blocks the child might ask for.
+- No mode that hides blocks without the child asking. They can fold the palette
+  down to its category rail for room, by pressing Hide or saying "hide the
+  blocks"; the categories stay on screen, any block can still be asked for by
+  name, and pressing a category or saying "show the blocks" opens it again.
 - No emoji as icons. Inline stroke SVG only.
 - No motion that cannot be interrupted, and none at all under
   `prefers-reduced-motion`.
@@ -173,8 +190,10 @@ Rules:
 
 ## Known gaps
 
-- `repeat until` and `wait until` show an empty hexagon and no block in the set
-  fills it. Deliberate for now; a sensing block closes it later.
+- `repeat until` and `wait until` are not in the set. They need a condition to
+  hold, and a child who cannot drag cannot put one in an empty slot, so they
+  wait on a sensing block that can be spoken into place. Twelve blocks for now,
+  not fifteen.
 - Microphone permission has no home in the UI, so a denied permission cannot be
   explained to the child.
 - None of this has been tested with a child. Sizes, phrasings and whether an
@@ -200,9 +219,8 @@ Tailwind v4 reads its theme from CSS. Add to `src/index.css`:
   --color-cat-look: #0e7490;
   --color-cat-control: #c2410c;
 
-  --color-voice-asleep: #cbd5e1;
-  --color-voice-listening: #2563eb;
-  --color-voice-answering: #7c3aed;
+  /* Voxide's widget owns the listening states and their colours. */
+  --color-brand: #2563eb;
 
   --color-run: #047857;
   --color-stop: #b91c1c;
