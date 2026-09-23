@@ -90,6 +90,13 @@ describe("VoiceMic", () => {
     expect(screen.getByText("Added a repeat block. It is block 2.")).toBeInTheDocument();
   });
 
+  it("tells the child when the voice allowance has run out, not that they failed", () => {
+    renderMic({ status: "error", errorCode: "usage_limit" });
+
+    expect(screen.getByText("Voice is used up for now. Ask a grown-up.")).toBeInTheDocument();
+    expect(screen.queryByText(/could not hear you/)).not.toBeInTheDocument();
+  });
+
   it("says a failed connection out loud, and lets the next press retry", () => {
     renderMic({ status: "error" });
 

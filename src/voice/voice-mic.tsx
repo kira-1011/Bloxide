@@ -86,6 +86,8 @@ function titleFor(state: VoiceState, session: ReturnType<typeof useVoxideVoice>)
     return session.status === "connecting" ? "Getting ready…" : "I am listening…";
   }
   if (state === "answering") return "Answering…";
+  // Not the child's fault, and pressing again will not help, so say whose it is.
+  if (session.errorCode === "usage_limit") return "Voice is used up for now. Ask a grown-up.";
   if (session.status === "error") return "I could not hear you. Press the mic to try again.";
   if (session.wakeArmed && session.wakePhrase) return `Say “${session.wakePhrase}”`;
   return "Press the mic to talk";
