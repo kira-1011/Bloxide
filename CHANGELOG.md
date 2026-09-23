@@ -3,6 +3,77 @@
 Progress on Bloxide, newest first. Written for anyone following the build, not
 just developers — see the Changelog section of AGENTS.md.
 
+## 2026-09-22
+
+### Added
+
+- **Starting over is something you can say.** "Clear everything and start
+  again" empties the workspace, and blocks can go several at a time — "delete
+  blocks one and three". Emptying it by hand meant dragging each block to the
+  bin one at a time, which is the one thing our children cannot do, so until
+  now the only way out of a tangled program was a mouse.
+
+### Fixed
+
+- **Asking for a block works.** The assistant had stopped adding blocks
+  altogether while still answering "I've added a move block" — the list it
+  chose from was written in names nobody says out loud. It now picks from the
+  words a child uses, and says them back: "add a loop", "make him disappear"
+  and "add something that makes it pause" all land on the right block.
+- **You can watch the sprite go.** A four-times loop used to finish faster than
+  a single frame, so the sprite did not travel — it was simply somewhere else
+  when the program ended. Loops now run at Scratch's speed, a step every
+  thirtieth of a second, and a child can see the repeat happening. Stop still
+  halts it at once.
+- **A value lands on the block you meant.** Saying "walk a hundred steps" and
+  then "turn ninety degrees" could put the ninety on the walking block: adding
+  a block renumbers the others, and the assistant was told the numbering as it
+  had been a moment before. Every answer now carries the number with it —
+  "Added a move block. It is block 3."
+
+### Changed
+
+- **One place to look when a run goes wrong.** The output panel under the
+  editor is gone — the sprite has spoken in a bubble since the block set
+  changed, so the panel only ever sat there empty. If a program does fail, it
+  now says so beside Run and Stop, where the child was already looking to start
+  it.
+
+### Next
+
+- Numbers still shift when a block is added, so a badge means "second from the
+  top" rather than "this block". Naming a block and having the name stick is
+  the next thing the reference system needs.
+- Nobody under twelve has tried any of this yet.
+
+## 2026-09-20
+
+### Added
+
+- **Blocks that do something.** The palette is now Bloxide's own twelve —
+  move, turn right, turn left, go to x y, say, say for secs, change size by,
+  hide, show, wait, repeat and forever — in the four colours of the design:
+  movement, say, look, control. Say "add a move block", "make it fifty steps",
+  "run it", and the sprite moves. Blockly's starter Logic, Math and Text
+  blocks are gone; they were scaffolding.
+- **The sprite speaks instead of a print panel.** A say block puts words in a
+  bubble on the stage, where the child is already looking, rather than in a
+  list of output underneath.
+- **No hat block.** A program runs top to bottom when the child says "run it".
+  Every block that starts a program in Scratch is named after a mouse click.
+
+- **No more holes to fill.** A block asked for by voice now arrives with its
+  values already in it — a print block used to appear with an empty socket, and
+  the only way to fill a socket is to drag a block into it. Saying a new value
+  over the one that is there works instead.
+- **Every word means one block.** "Turn right" and "turn left" are separate
+  things to say, because a bare "turn" would have been answered with whichever
+  block came first — confidently, and half the time wrongly.
+- **Blocks that hold two values.** Where a block has more than one value the
+  assistant asks which — "say which one: x or y" — rather than guessing and
+  changing the wrong one. A block with a single value is unchanged: no naming
+  needed.
+
 ## 2026-09-19
 
 Voice works. The editor can be driven by speaking to it.

@@ -9,12 +9,8 @@ const BASE_HEIGHT = 130;
 const HIDDEN_ALPHA = 0.15;
 
 /**
- * Which way the sprite faces, as a left-right flip rather than a turn.
- *
- * Scratch calls this the left-right rotation style and uses it for exactly this
- * reason: the costume is a character who stands up. Turning it with the heading
- * would leave it upside down at anything past horizontal, which reads as a bug
- * rather than as a direction.
+ * Scratch's left-right rotation style: the costume is a character who stands
+ * up, and turning it with the heading would leave it upside down.
  */
 function facesLeft(direction: number): boolean {
   return direction < 0;
@@ -94,10 +90,25 @@ export function drawSprite(
   ctx.restore();
 }
 
+/**
+ * `width` is a plain number on a canvas or a bitmap and an SVGAnimatedLength on
+ * an SVG image, so the union has no one property to read.
+ */
+function isSized(source: CanvasImageSource): source is CanvasImageSource & {
+  width: number;
+  height: number;
+} {
+  return (
+    "width" in source &&
+    "height" in source &&
+    typeof source.width === "number" &&
+    typeof source.height === "number"
+  );
+}
+
 function imageSize(image: CanvasImageSource): { width: number; height: number } {
   if (typeof HTMLImageElement !== "undefined" && image instanceof HTMLImageElement) {
     return { width: image.naturalWidth, height: image.naturalHeight };
   }
-  const sized = image as { width?: number; height?: number };
-  return { width: sized.width ?? 0, height: sized.height ?? 0 };
+  return isSized(image) ? { width: image.width, height: image.height } : { width: 0, height: 0 };
 }

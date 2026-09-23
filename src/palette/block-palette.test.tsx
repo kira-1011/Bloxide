@@ -2,6 +2,7 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { BlockPalette } from "@/palette/block-palette";
 import { PALETTE_BLOCKS } from "@/palette/catalogue";
+import { BLOCK_TYPES } from "@/blockly/toolbox";
 
 beforeEach(() => {
   // jsdom has no layout, so nothing implements it.
@@ -16,7 +17,7 @@ describe("BlockPalette", () => {
     render(<BlockPalette />);
 
     expect(screen.getByText("move")).toBeInTheDocument();
-    expect(screen.getByText("wait until")).toBeInTheDocument();
+    expect(screen.getByText("forever")).toBeInTheDocument();
     expect(screen.getAllByRole("heading")).toHaveLength(4);
   });
 
@@ -56,10 +57,13 @@ describe("BlockPalette", () => {
     }
   });
 
-  it("offers one rail target per category and lists every block", () => {
+  it("offers one rail target per category", () => {
     render(<BlockPalette />);
 
     expect(screen.getAllByRole("button")).toHaveLength(4);
-    expect(PALETTE_BLOCKS).toHaveLength(14);
+  });
+
+  it("lists exactly the blocks the toolbox offers, so neither can fall behind", () => {
+    expect(PALETTE_BLOCKS.map((block) => block.id)).toEqual([...BLOCK_TYPES]);
   });
 });

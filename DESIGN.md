@@ -53,12 +53,12 @@ Semantic tokens. Components reference the token, never the hex.
 
 Each category owns one fill. White text sits on all of them at 4.5:1 or better.
 
-| Category | Token                  | Hex       | Blocks                                          |
-| -------- | ---------------------- | --------- | ----------------------------------------------- |
-| Movement | `--color-cat-movement` | `#1D4ED8` | move, turn right, turn left, go to x y          |
-| Say      | `--color-cat-say`      | `#A21CAF` | say for secs, say                               |
-| Look     | `--color-cat-look`     | `#0E7490` | change size by, hide, show                      |
-| Control  | `--color-cat-control`  | `#C2410C` | wait, repeat, forever, repeat until, wait until |
+| Category | Token                  | Hex       | Blocks                                 |
+| -------- | ---------------------- | --------- | -------------------------------------- |
+| Movement | `--color-cat-movement` | `#1D4ED8` | move, turn right, turn left, go to x y |
+| Say      | `--color-cat-say`      | `#A21CAF` | say for secs, say                      |
+| Look     | `--color-cat-look`     | `#0E7490` | change size by, hide, show             |
+| Control  | `--color-cat-control`  | `#C2410C` | wait, repeat, forever                  |
 
 ### Voice states
 
@@ -178,8 +178,10 @@ Rules:
 
 ## Known gaps
 
-- `repeat until` and `wait until` show an empty hexagon and no block in the set
-  fills it. Deliberate for now; a sensing block closes it later.
+- `repeat until` and `wait until` are not in the set. They need a condition to
+  hold, and a child who cannot drag cannot put one in an empty slot, so they
+  wait on a sensing block that can be spoken into place. Twelve blocks for now,
+  not fifteen.
 - Microphone permission has no home in the UI, so a denied permission cannot be
   explained to the child.
 - None of this has been tested with a child. Sizes, phrasings and whether an

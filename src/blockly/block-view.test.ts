@@ -1,5 +1,6 @@
 import * as Blockly from "blockly/core";
 import "blockly/blocks";
+import "@/blocks/custom-blocks";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { BlockNumberIcon } from "@/blockly/block-number-icon";
 import { getBlockNumber, numberBlocks, revealBlock } from "@/blockly/block-view";
@@ -15,8 +16,8 @@ beforeEach(() => {
 
 describe("numberBlocks", () => {
   it("numbers from one, in workspace order", () => {
-    workspace.newBlock("controls_repeat");
-    workspace.newBlock("text_print");
+    workspace.newBlock("controls_repeat_ext");
+    workspace.newBlock("bloxide_say");
 
     numberBlocks(workspace);
 
@@ -24,23 +25,23 @@ describe("numberBlocks", () => {
   });
 
   it("numbers nested blocks too, so anything on screen can be named", () => {
-    const loop = workspace.newBlock("controls_repeat");
-    const print = workspace.newBlock("text_print");
+    const loop = workspace.newBlock("controls_repeat_ext");
+    const say = workspace.newBlock("bloxide_say");
     const input = loop.getInput("DO")?.connection;
-    if (!input || !print.previousConnection) throw new Error("block shape changed");
-    input.connect(print.previousConnection);
+    if (!input || !say.previousConnection) throw new Error("block shape changed");
+    input.connect(say.previousConnection);
 
     numberBlocks(workspace);
 
-    expect(getBlockNumber(print)).not.toBeNull();
-    expect(getBlockNumber(loop)).not.toBe(getBlockNumber(print));
+    expect(getBlockNumber(say)).not.toBeNull();
+    expect(getBlockNumber(loop)).not.toBe(getBlockNumber(say));
   });
 
   it("renumbers rather than stacking a second badge on a block", () => {
-    const first = workspace.newBlock("text_print");
+    const first = workspace.newBlock("bloxide_say");
     numberBlocks(workspace);
 
-    const second = workspace.newBlock("controls_repeat");
+    const second = workspace.newBlock("controls_repeat_ext");
     numberBlocks(workspace);
     numberBlocks(workspace);
 
@@ -49,9 +50,9 @@ describe("numberBlocks", () => {
   });
 
   it("closes the gap when a block is deleted", () => {
-    const first = workspace.newBlock("controls_repeat");
-    const second = workspace.newBlock("text_print");
-    const third = workspace.newBlock("controls_if");
+    const first = workspace.newBlock("controls_repeat_ext");
+    const second = workspace.newBlock("bloxide_say");
+    const third = workspace.newBlock("bloxide_forever");
     numberBlocks(workspace);
 
     second.dispose(false);
@@ -89,6 +90,8 @@ describe("badges on value blocks", () => {
   });
 
   it("still badges a value block that takes blocks of its own", () => {
+    // No block we ship reports a value, so Blockly's own compare block stands
+    // in for the shape until a sensing block fills DESIGN.md's empty hexagon.
     const compare = workspace.newBlock("logic_compare");
 
     numberBlocks(workspace);

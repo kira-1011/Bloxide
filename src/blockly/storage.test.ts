@@ -1,5 +1,6 @@
 import * as Blockly from "blockly/core";
 import "blockly/blocks";
+import "@/blocks/custom-blocks";
 import { afterEach, describe, expect, it } from "vitest";
 import { clearWorkspace, loadWorkspace, saveWorkspace } from "@/blockly/storage";
 import { initBlocklyLocale } from "@/blockly/locale";
@@ -7,7 +8,9 @@ import { initBlocklyLocale } from "@/blockly/locale";
 // Block definitions interpolate Blockly.Msg; without messages newBlock throws.
 initBlocklyLocale();
 
-const STORAGE_KEY = "bloxide/workspace";
+const STORAGE_KEY = "bloxide/workspace/v2";
+/** What programs were saved under before the block set changed. */
+const OLD_STORAGE_KEY = "bloxide/workspace";
 
 /** A headless workspace is enough: serialization never touches the DOM. */
 function makeWorkspace() {
@@ -21,14 +24,14 @@ afterEach(() => {
 describe("workspace storage", () => {
   it("round-trips a program through localStorage", () => {
     const source = makeWorkspace();
-    source.newBlock("controls_repeat");
+    source.newBlock("bloxide_move");
 
     saveWorkspace(source);
     const restored = makeWorkspace();
     loadWorkspace(restored);
 
     expect(restored.getAllBlocks(false)).toHaveLength(1);
-    expect(restored.getAllBlocks(false)[0]?.type).toBe("controls_repeat");
+    expect(restored.getAllBlocks(false)[0]?.type).toBe("bloxide_move");
   });
 
   it("leaves the workspace alone when nothing is stored", () => {
@@ -58,7 +61,7 @@ describe("workspace storage", () => {
 
   it("keeps events disabled while loading, so a restore is not a change", () => {
     const source = makeWorkspace();
-    source.newBlock("text_print");
+    source.newBlock("bloxide_say");
     saveWorkspace(source);
 
     const restored = makeWorkspace();
@@ -70,9 +73,21 @@ describe("workspace storage", () => {
     expect(seen).toHaveLength(0);
   });
 
+  it("leaves a program saved under the old key where it is", () => {
+    // Its blocks are gone from the palette, so loading one would put a child
+    // in front of a program they could not read or repair by speaking.
+    localStorage.setItem(OLD_STORAGE_KEY, JSON.stringify({ blocks: { blocks: [] } }));
+    const workspace = makeWorkspace();
+
+    loadWorkspace(workspace);
+
+    expect(workspace.getAllBlocks(false)).toHaveLength(0);
+    expect(localStorage.getItem(OLD_STORAGE_KEY)).not.toBeNull();
+  });
+
   it("clears the saved program", () => {
     const workspace = makeWorkspace();
-    workspace.newBlock("text_print");
+    workspace.newBlock("bloxide_say");
     saveWorkspace(workspace);
 
     clearWorkspace();

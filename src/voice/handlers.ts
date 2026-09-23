@@ -1,18 +1,33 @@
+import type * as Blockly from "blockly/core";
+import { BlockSvg, ConnectionType, serialization } from "blockly/core";
 import type { VoxideActionConfig } from "@voxide/react";
 import { defineAction } from "@/voice/define-action";
 import { getActiveWorkspace } from "@/blockly/active-workspace";
 import { setFieldValue } from "@/blockly/block-fields";
-import { numberBlocks, revealBlock, selectOnly } from "@/blockly/block-view";
-import { forgetBlock, rememberBlock, resolveBlock } from "@/blockly/block-reference";
-import { BLOCK_TYPES, resolveBlockType } from "@/blockly/toolbox";
+import { getBlockNumber, numberBlocks, revealBlock, selectOnly } from "@/blockly/block-view";
+import {
+  findBlockByNumber,
+  forgetBlock,
+  forgetMissingBlock,
+  rememberBlock,
+  resolveBlock,
+} from "@/blockly/block-reference";
+import { BLOCK_NAMES, resolveBlockType, slotDefaults, spokenName } from "@/blockly/toolbox";
 import { isProgramRunning, runProgram, stopProgram } from "@/run/runner";
 
 // Every capability the agent can invoke. One block, one connection or one value
 // per utterance, and never `dangerous: true` — it asks for a click to confirm.
 
-// Blockly is imported inside the handlers, not at the top: the voice layer is
-// eager, so a static import drags ~800 kB back into the entry chunk. By the
-// time a handler runs, the editor chunk has already loaded it.
+type ConnectionTypeValue = (typeof ConnectionType)[keyof typeof ConnectionType];
+
+/**
+ * The SDK snapshots the workspace *before* an action runs, so the result is the
+ * only channel that can tell the agent about a number that just changed.
+ */
+function andItsNumber(said: string, block: Blockly.Block): string {
+  const number = getBlockNumber(block);
+  return number === null ? said : `${said}. It is block ${number}.`;
+}
 
 function describeMiss(type?: string, number?: number): string {
   if (number !== undefined) return `There is no block ${number}.`;
@@ -20,7 +35,7 @@ function describeMiss(type?: string, number?: number): string {
   return "I am not sure which block you mean.";
 }
 
-export async function addBlock({ type }: { type: string }): Promise<string> {
+export function addBlock({ type }: { type: string }): string {
   const workspace = getActiveWorkspace();
 
   // Against our toolbox, not Blockly's registry: the enum only steers the
@@ -30,13 +45,16 @@ export async function addBlock({ type }: { type: string }): Promise<string> {
     return `I do not know a block called ${type}.`;
   }
 
-  const { BlockSvg } = await import("blockly/core");
-  const block = workspace.newBlock(resolved);
-  // A headless workspace has no SVG to build; a rendered one needs both calls
-  // or the block exists in the model and never appears on screen.
+  // Through the serialiser rather than newBlock: newBlock makes no shadows, so
+  // a block with value inputs would arrive with holes in it, and filling a hole
+  // takes a block dropped in by hand.
+  const inputs = slotDefaults(resolved);
+  const block = serialization.blocks.append(
+    { type: resolved, ...(inputs ? { inputs } : {}) },
+    workspace,
+  );
+
   if (block instanceof BlockSvg) {
-    block.initSvg();
-    block.render();
     // Every new block starts at the origin, so without this they pile up on
     // each other and a number cannot be read off the screen.
     workspace.cleanUp();
@@ -50,7 +68,7 @@ export async function addBlock({ type }: { type: string }): Promise<string> {
   // renumber until after this returns and the next spoken number would miss.
   numberBlocks(workspace);
 
-  return `Added a ${resolved} block`;
+  return andItsNumber(`Added a ${spokenName(resolved)} block`, block);
 }
 
 /**
@@ -58,7 +76,7 @@ export async function addBlock({ type }: { type: string }): Promise<string> {
  * Blockly refuses connections that make no sense, so a wrong pairing is a
  * spoken "that does not fit" rather than a broken program.
  */
-export async function attachBlock({
+export function attachBlock({
   type,
   number,
   to,
@@ -68,7 +86,7 @@ export async function attachBlock({
   number?: number;
   to?: string;
   toNumber?: number;
-}): Promise<string> {
+}): string {
   const workspace = getActiveWorkspace();
 
   const child = resolveBlock(workspace, type, number !== undefined ? { number } : {});
@@ -91,20 +109,26 @@ export async function attachBlock({
       : describeMiss(to, toNumber);
   }
 
-  const { ConnectionType } = await import("blockly/core");
-
+  // A shadow counts as open: it is a default, and Blockly puts it back if the
+  // block covering it is taken away again. Without this, giving blocks their
+  // slot defaults would be what stops a real block from ever going in one.
   const openInputs = (kind: ConnectionTypeValue) =>
     parent.inputList
       .map((input) => input.connection)
-      .filter((connection) => connection?.type === kind && !connection.targetConnection);
+      .filter(
+        (connection) =>
+          connection?.type === kind &&
+          (!connection.targetConnection || connection.targetBlock()?.isShadow() === true),
+      );
 
-  type ConnectionTypeValue = (typeof ConnectionType)[keyof typeof ConnectionType];
-
+  // Unreachable until a sensing block lands: nothing a child can ask for
+  // reports a value yet, which is why DESIGN.md's known gaps leave `repeat
+  // until` with an empty hexagon.
   if (child.outputConnection) {
     for (const connection of openInputs(ConnectionType.INPUT_VALUE)) {
       if (connection?.connect(child.outputConnection)) {
         numberBlocks(workspace);
-        return `Put it in the ${parent.type} block`;
+        return andItsNumber(`Put it in the ${spokenName(parent.type)} block`, child);
       }
     }
   }
@@ -114,64 +138,147 @@ export async function attachBlock({
     for (const connection of openInputs(ConnectionType.NEXT_STATEMENT)) {
       if (connection?.connect(child.previousConnection)) {
         numberBlocks(workspace);
-        return `Put it inside the ${parent.type} block`;
+        return andItsNumber(`Put it inside the ${spokenName(parent.type)} block`, child);
       }
     }
     if (parent.nextConnection && !parent.nextConnection.targetConnection) {
       if (parent.nextConnection.connect(child.previousConnection)) {
         numberBlocks(workspace);
-        return `Put it under the ${parent.type} block`;
+        return andItsNumber(`Put it under the ${spokenName(parent.type)} block`, child);
       }
     }
   }
 
-  return `A ${child.type} block does not fit there.`;
+  return `A ${spokenName(child.type)} block does not fit there.`;
 }
 
 /**
- * Changes the value written on a block: how many times a loop repeats, what a
- * piece of text says, which comparison is made.
+ * `go to x () y ()` holds two values, so `slot` names which. With one it is
+ * left out; with two an unnamed slot is asked about rather than guessed.
  */
-export async function setParam({
+export function setParam({
   type,
   number,
   value,
+  slot,
 }: {
   type?: string;
   number?: number;
   value: string;
-}): Promise<string> {
+  slot?: string;
+}): string {
   const workspace = getActiveWorkspace();
 
   const block = resolveBlock(workspace, type, number !== undefined ? { number } : {});
   if (!block) return describeMiss(type, number);
 
-  const change = setFieldValue(block, value);
+  const change = setFieldValue(block, value, slot);
   if (!change.ok) return change.spoken;
 
-  const { BlockSvg } = await import("blockly/core");
   if (block instanceof BlockSvg) {
     selectOnly(block);
     revealBlock(workspace, block);
   }
   rememberBlock(block);
 
-  return change.spoken;
+  return andItsNumber(change.spoken, block);
 }
 
-export function deleteBlock({ type, number }: { type?: string; number?: number }): string {
+/**
+ * Numbers only: what "all of them" means is the agent's to work out.
+ *
+ * `Number` is generous — "1e2" is 100, "0x10" is 16 — so the round trip is what
+ * rejects those, and a wrong deletion cannot be undone by speaking.
+ */
+function blockNumber(part: string): number | null {
+  const parsed = Number(part);
+  if (!Number.isSafeInteger(parsed) || parsed <= 0) return null;
+  return String(parsed) === part ? parsed : null;
+}
+
+function parseNumbers(numbers: string): number[] | null {
+  const parsed = numbers.split(",").map((part) => blockNumber(part.trim()));
+  return parsed.every((number) => number !== null) ? parsed : null;
+}
+
+/** Counted after the fact: what the workspace holds, not what we meant to remove. */
+function ownBlocks(workspace: Blockly.Workspace): Blockly.Block[] {
+  return workspace.getAllBlocks(false).filter((block) => !block.isShadow());
+}
+
+function countOf(n: number): string {
+  return n === 1 ? "1 block" : `${n} blocks`;
+}
+
+/** What is left, said the same way however many went. */
+function andWhatIsLeft(spoken: string, workspace: Blockly.Workspace): string {
+  const left = ownBlocks(workspace).length;
+  return left === 0
+    ? `${spoken}. The workspace is empty.`
+    : `${spoken}. ${countOf(left)} left, numbered from one.`;
+}
+
+/**
+ * Deletes a block, several by the numbers on them, or every one.
+ *
+ * Starting over has to be sayable. Emptying the workspace by hand means
+ * dragging each block to the bin one at a time, which is the thing our users
+ * cannot do — without this, the only way out of a tangled program is a mouse.
+ */
+export function deleteBlocks({
+  type,
+  number,
+  numbers,
+}: {
+  type?: string;
+  number?: number;
+  numbers?: string;
+}): string {
   const workspace = getActiveWorkspace();
+
+  if (numbers !== undefined) return deleteMany(workspace, numbers);
 
   const block = resolveBlock(workspace, type, number !== undefined ? { number } : {});
   if (!block) return describeMiss(type, number);
 
-  const removed = block.type;
+  const removed = spokenName(block.type);
   forgetBlock(block);
   // healStack: what was under it reconnects instead of being orphaned.
   block.dispose(true);
+  forgetMissingBlock(workspace);
   numberBlocks(workspace);
 
-  return `Deleted the ${removed} block`;
+  // The block it named is gone, so there is no number to give back — but every
+  // number after it has just moved up, and the agent's copy of the workspace
+  // predates that.
+  return andWhatIsLeft(`Deleted the ${removed} block`, workspace);
+}
+
+function deleteMany(workspace: Blockly.Workspace, numbers: string): string {
+  if (ownBlocks(workspace).length === 0) return "There is nothing to delete.";
+
+  const wanted = parseNumbers(numbers);
+  if (!wanted) return "I am not sure which blocks you mean.";
+
+  // Every block is found before any is removed: deleting one renumbers the
+  // rest, so resolving as we went would make the second number mean something
+  // else by the time we reached it.
+  const found = wanted
+    .map((n) => findBlockByNumber(workspace, n))
+    .filter((block): block is Blockly.Block => block !== null);
+
+  const unique = [...new Set(found)];
+  if (unique.length === 0) return "I cannot find those blocks.";
+
+  for (const block of unique) {
+    forgetBlock(block);
+    // A block inside one already deleted goes with it; disposing twice throws.
+    if (!block.disposed) block.dispose(true);
+  }
+  forgetMissingBlock(workspace);
+  numberBlocks(workspace);
+
+  return andWhatIsLeft(`Deleted ${countOf(unique.length)}`, workspace);
 }
 
 /**
@@ -203,10 +310,8 @@ export const VOICE_ACTIONS = {
       type: {
         type: "string",
         required: true,
-        // Without the enum the model passes the spoken word through —
-        // "repeat" rather than controls_repeat — and nothing matches.
-        enum: [...BLOCK_TYPES],
-        description: "The Blockly type id of the block to add",
+        enum: [...BLOCK_NAMES],
+        description: "The block to add, by name",
       },
     },
     handler: ({ type }) => addBlock({ type }),
@@ -224,8 +329,8 @@ export const VOICE_ACTIONS = {
       },
       type: {
         type: "string",
-        enum: [...BLOCK_TYPES],
-        description: "The block to attach, by type. Omit for the block just added.",
+        enum: [...BLOCK_NAMES],
+        description: "The block to attach, by name. Omit for the block just added.",
       },
       toNumber: {
         type: "number",
@@ -233,29 +338,35 @@ export const VOICE_ACTIONS = {
       },
       to: {
         type: "string",
-        enum: [...BLOCK_TYPES],
-        description: "The block to attach it to, by type",
+        enum: [...BLOCK_NAMES],
+        description: "The block to attach it to, by name",
       },
     },
     handler: (args) => attachBlock(args),
   }),
 
-  deleteBlock: defineAction({
+  deleteBlocks: defineAction({
     description:
-      "Delete a block, by the number shown on it or by type. " +
-      "Omit both to delete the block that was just added.",
+      "Delete blocks: one by its number or name, or several by their numbers. " +
+      "Omit everything to delete the block that was just added.",
     params: {
       number: {
         type: "number",
-        description: "The number shown on the block to delete. Most precise.",
+        description: "The number shown on a single block to delete. Most precise.",
+      },
+      numbers: {
+        type: "string",
+        description:
+          "Several blocks at once: the numbers shown on them, separated by commas, like '2, 4'. " +
+          "To clear the workspace, list every block's number.",
       },
       type: {
         type: "string",
-        enum: [...BLOCK_TYPES],
-        description: "The block to delete, by type",
+        enum: [...BLOCK_NAMES],
+        description: "The block to delete, by name",
       },
     },
-    handler: (args) => deleteBlock(args),
+    handler: (args) => deleteBlocks(args),
   }),
 
   setParam: defineAction({
@@ -270,13 +381,19 @@ export const VOICE_ACTIONS = {
       },
       type: {
         type: "string",
-        enum: [...BLOCK_TYPES],
-        description: "The block to change, by type",
+        enum: [...BLOCK_NAMES],
+        description: "The block to change, by name",
       },
       value: {
         type: "string",
         required: true,
         description: "The new value: digits for a number, or the words for a comparison",
+      },
+      slot: {
+        type: "string",
+        description:
+          "Which value to change on a block that holds more than one, such as " +
+          "x or y. Omit when the block holds only one.",
       },
     },
     handler: (args) => setParam(args),

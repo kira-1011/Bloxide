@@ -28,6 +28,14 @@ export function forgetBlock(block: Blockly.Block): void {
   if (lastBlockId === block.id) lastBlockId = null;
 }
 
+/**
+ * Deleting a block takes everything inside it, so the one "it" refers to can go
+ * unnamed. Asking the workspace beats tracking what a deletion carried off.
+ */
+export function forgetMissingBlock(workspace: Blockly.Workspace): void {
+  if (lastBlockId !== null && !workspace.getBlockById(lastBlockId)) lastBlockId = null;
+}
+
 interface ResolveOptions {
   /** Id to skip, so a block is never resolved as its own target. */
   readonly exclude?: string;
@@ -36,12 +44,8 @@ interface ResolveOptions {
 }
 
 /**
- * Resolves the reference, most specific first: the number on screen, then the
- * named type, then the implicit target.
- *
- * A number is unambiguous and survives a misheard word, which is why it wins.
- * Positional reference ("the second repeat") is not built, so a named type
- * still resolves to the last match in workspace order.
+ * Most specific first: the number on screen, then the named type, then the
+ * block just touched. A number survives a misheard word, which is why it wins.
  */
 export function resolveBlock(
   workspace: Blockly.Workspace,
@@ -61,6 +65,10 @@ export function resolveBlock(
   const type = resolveBlockType(reference);
   if (!type) return null;
 
-  const matches = workspace.getBlocksByType(type, true).filter((block) => block.id !== exclude);
+  // Shadows excluded: a shadow is a default inside another block, so deleting
+  // or attaching one would take away the slot it fills.
+  const matches = workspace
+    .getBlocksByType(type, true)
+    .filter((block) => block.id !== exclude && !block.isShadow());
   return matches.at(-1) ?? null;
 }

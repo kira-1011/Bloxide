@@ -8,7 +8,7 @@ import {
   resetSprite,
   setSaying,
   setVisible,
-  subscribeToSprite,
+  spriteStore,
   turnDegrees,
 } from "@/sprite/sprite-store";
 
@@ -87,7 +87,7 @@ describe("sprite store", () => {
 
   it("tells subscribers only when something changed", () => {
     const listener = vi.fn();
-    const unsubscribe = subscribeToSprite(listener);
+    const unsubscribe = spriteStore.subscribe(listener);
 
     moveSteps(10);
     expect(listener).toHaveBeenCalledTimes(1);

@@ -24,17 +24,16 @@ Bloxide is our attempt at that gap.
 The child speaks. Each sentence does one thing.
 
 ```
-"Add a when flag clicked block."   -> block appears
-"Add a repeat block under it."     -> snaps below
+"Add a repeat block."              -> block appears
 "Make it four times."              -> value updates
-"Put a move block inside it."      -> nests in the loop
+"Add a move block."                -> block appears
+"Put it inside the repeat."        -> nests in the loop
 "Make it fifty steps."             -> value updates
 "Run it."                          -> the sprite moves
 ```
 
-That is the shape. Today the first two kinds of sentence work — adding a block,
-nesting it, deleting it, running and stopping. Changing a value, and the sprite
-itself, are still to come.
+There is no hat block to start with. A program runs top to bottom when the
+child says "run it", because every other way of starting one names a mouse.
 
 Every action gives feedback two ways: the block appears and stays highlighted,
 and the app says what it did in a sentence.
@@ -52,9 +51,13 @@ game" it will not build one, because the point is that the child is the author.
 
 ## Status
 
-Early, but the loop is closed: blocks can be added, nested, deleted, run and
-stopped by speaking. The Bloxide block set — a stage and a sprite — is still to
-come.
+Early, but the loop is closed end to end: the twelve Bloxide blocks — move,
+turn right, turn left, go to, say, say for secs, change size, hide, show, wait,
+repeat and forever — can be added, nested, deleted, given values, run and
+stopped by speaking, and they drive a sprite on a stage.
+
+Not built yet: `repeat until` and `wait until`, which need a sensing block to
+fill their empty hexagon, and position reference ("the second repeat").
 
 ## Stack
 

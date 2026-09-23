@@ -1,6 +1,9 @@
 import * as Blockly from "blockly/core";
 
-const STORAGE_KEY = "bloxide/workspace";
+// v2: the block set changed under it. There is no version envelope inside the
+// payload, so a program saved before the change would load blocks the palette
+// no longer has and could never be repaired by voice.
+const STORAGE_KEY = "bloxide/workspace/v2";
 
 /**
  * Persists the program so a reload never costs the work so far. The

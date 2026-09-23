@@ -1,9 +1,9 @@
+import { TOOLBOX_CATEGORIES } from "@/blockly/toolbox";
+
 /**
- * The blocks a child may ask for, in the order the palette shows them.
- *
- * Placeholder data: these describe what the palette draws, not blocks the
- * workspace can make yet. The Bloxide block definitions replace `type` with
- * real registered names.
+ * What the palette draws, derived from the toolbox rather than written out
+ * again. A block the child can be given is therefore always a block the
+ * palette shows, and neither list can quietly fall behind the other.
  */
 
 export type CategoryId = "movement" | "say" | "look" | "control";
@@ -16,7 +16,7 @@ export interface Category {
   readonly fill: string;
 }
 
-/** A run of literal words, or a slot the child fills by speaking a value. */
+/** A run of literal words, or a slot holding the value it starts with. */
 export type BlockPart = { readonly word: string } | { readonly slot: string };
 
 /** A part with the identity React needs: two slots can hold the same value. */
@@ -28,69 +28,57 @@ export interface PaletteBlock {
   readonly parts: readonly KeyedPart[];
 }
 
-interface BlockSpec {
-  readonly id: string;
-  readonly category: CategoryId;
-  readonly parts: readonly BlockPart[];
-}
+const FILLS: Record<CategoryId, string> = {
+  movement: "bg-cat-movement",
+  say: "bg-cat-say",
+  look: "bg-cat-look",
+  control: "bg-cat-control",
+};
+
+export const CATEGORIES: readonly Category[] = TOOLBOX_CATEGORIES.map((category) => {
+  const id = category.name.toLowerCase() as CategoryId;
+  return { id, label: category.name, fill: FILLS[id] };
+});
+
+/**
+ * How each block reads on screen. The toolbox knows the words a child may say
+ * and the value each slot starts with, but not the order they are spoken in,
+ * which is what a block has to show.
+ */
+const WORDING: Record<string, readonly BlockPart[]> = {
+  bloxide_move: [{ word: "move" }, { slot: "10" }, { word: "steps" }],
+  bloxide_turn_right: [{ word: "turn right" }, { slot: "15" }, { word: "degrees" }],
+  bloxide_turn_left: [{ word: "turn left" }, { slot: "15" }, { word: "degrees" }],
+  bloxide_go_to: [{ word: "go to x" }, { slot: "0" }, { word: "y" }, { slot: "0" }],
+  bloxide_say_for: [
+    { word: "say" },
+    { slot: "Hello!" },
+    { word: "for" },
+    { slot: "2" },
+    { word: "secs" },
+  ],
+  bloxide_say: [{ word: "say" }, { slot: "Hello!" }],
+  bloxide_change_size: [{ word: "change size by" }, { slot: "10" }],
+  bloxide_hide: [{ word: "hide" }],
+  bloxide_show: [{ word: "show" }],
+  bloxide_wait: [{ word: "wait" }, { slot: "1" }, { word: "seconds" }],
+  controls_repeat_ext: [{ word: "repeat" }, { slot: "10" }],
+  bloxide_forever: [{ word: "forever" }],
+};
 
 /** Parts are authored in order and never reorder, so position names them. */
-function keyed(specs: readonly BlockSpec[]): readonly PaletteBlock[] {
-  return specs.map((spec) => ({
-    ...spec,
-    parts: spec.parts.map((part, index) => ({ ...part, key: `${spec.id}-${index}` })),
-  }));
-}
-
-export const CATEGORIES: readonly Category[] = [
-  { id: "movement", label: "Movement", fill: "bg-cat-movement" },
-  { id: "say", label: "Say", fill: "bg-cat-say" },
-  { id: "look", label: "Look", fill: "bg-cat-look" },
-  { id: "control", label: "Control", fill: "bg-cat-control" },
-];
-
-export const PALETTE_BLOCKS: readonly PaletteBlock[] = keyed([
-  {
-    id: "move",
-    category: "movement",
-    parts: [{ word: "move" }, { slot: "10" }, { word: "steps" }],
-  },
-  {
-    id: "turn-right",
-    category: "movement",
-    parts: [{ word: "turn right" }, { slot: "15" }, { word: "degrees" }],
-  },
-  {
-    id: "turn-left",
-    category: "movement",
-    parts: [{ word: "turn left" }, { slot: "15" }, { word: "degrees" }],
-  },
-  {
-    id: "go-to",
-    category: "movement",
-    parts: [{ word: "go to x" }, { slot: "0" }, { word: "y" }, { slot: "0" }],
-  },
-  {
-    id: "say-for",
-    category: "say",
-    parts: [{ word: "say" }, { slot: "Hello!" }, { word: "for" }, { slot: "2" }, { word: "secs" }],
-  },
-  { id: "say", category: "say", parts: [{ word: "say" }, { slot: "Hello!" }] },
-  { id: "change-size", category: "look", parts: [{ word: "change size by" }, { slot: "10" }] },
-  { id: "hide", category: "look", parts: [{ word: "hide" }] },
-  { id: "show", category: "look", parts: [{ word: "show" }] },
-  {
-    id: "wait",
-    category: "control",
-    parts: [{ word: "wait" }, { slot: "1" }, { word: "seconds" }],
-  },
-  { id: "repeat", category: "control", parts: [{ word: "repeat" }, { slot: "10" }] },
-  { id: "forever", category: "control", parts: [{ word: "forever" }] },
-  // The empty slot has nothing to fill it until a sensing block exists. Known
-  // gap, listed in DESIGN.md rather than hidden.
-  { id: "repeat-until", category: "control", parts: [{ word: "repeat until" }, { slot: "" }] },
-  { id: "wait-until", category: "control", parts: [{ word: "wait until" }, { slot: "" }] },
-]);
+export const PALETTE_BLOCKS: readonly PaletteBlock[] = TOOLBOX_CATEGORIES.flatMap((category) =>
+  category.contents.map((entry) => ({
+    id: entry.type,
+    category: category.name.toLowerCase() as CategoryId,
+    // A block with no wording still shows, under its first spoken name, rather
+    // than going missing from the one list that says what may be asked for.
+    parts: (WORDING[entry.type] ?? [{ word: entry.say[0] ?? entry.type }]).map((part, index) => ({
+      ...part,
+      key: `${entry.type}-${index}`,
+    })),
+  })),
+);
 
 export function blocksIn(category: CategoryId): readonly PaletteBlock[] {
   return PALETTE_BLOCKS.filter((block) => block.category === category);

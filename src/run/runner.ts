@@ -1,54 +1,36 @@
 import type * as Blockly from "blockly/core";
-import { javascriptGenerator, Order } from "blockly/javascript";
-
-/** Thrown by the loop trap to unwind a stopped program. */
-class ProgramStopped extends Error {}
-
-export interface OutputLine {
-  /** Printing the same text twice is normal, so lines carry an id. */
-  readonly id: number;
-  readonly text: string;
-}
+import { javascriptGenerator } from "blockly/javascript";
+import "@/blocks/custom-block-generators";
+import { createStore } from "zustand/vanilla";
+import { ProgramStopped } from "@/run/program-stopped";
+import { createSpriteApi, type RunSession } from "@/sprite/sprite-api";
+import { resetSprite, setSaying } from "@/sprite/sprite-store";
 
 export interface RunState {
   readonly running: boolean;
-  readonly output: readonly OutputLine[];
   readonly error: string | null;
 }
 
 interface Run {
   cancelled: boolean;
+  /**
+   * Waiting timers, so Stop lands at once.
+   *
+   * A bare setTimeout promise outlives a stop: the timer still fires and the
+   * program runs one more statement. During a long wait, Stop would look dead.
+   */
+  readonly aborts: Set<(reason: unknown) => void>;
 }
 
+/** Scratch's frame: 30 a second, and a loop yields once each time round. */
+const FRAME = 1000 / 30;
+
+// A handle the cancellation guards compare by identity, not reactive state.
 let currentRun: Run | null = null;
 
 // The state lives here rather than in React because a program can be started by
 // a button or by voice, and both must see the same run.
-let state: RunState = { running: false, output: [], error: null };
-const listeners = new Set<() => void>();
-
-function setState(patch: Partial<RunState>): void {
-  state = { ...state, ...patch };
-  for (const listener of listeners) listener();
-}
-
-export function subscribeToRun(listener: () => void): () => void {
-  listeners.add(listener);
-  return () => {
-    listeners.delete(listener);
-  };
-}
-
-/** Stable between changes, as useSyncExternalStore requires. */
-export function getRunState(): RunState {
-  return state;
-}
-
-// window.alert cannot be dismissed by voice.
-javascriptGenerator.forBlock["text_print"] = (block, generator) => {
-  const value = generator.valueToCode(block, "TEXT", Order.NONE) || '""';
-  return `print(${value});\n`;
-};
+const store = createStore<RunState>()(() => ({ running: false, error: null }));
 
 export function isProgramRunning(): boolean {
   return currentRun !== null;
@@ -56,49 +38,94 @@ export function isProgramRunning(): boolean {
 
 /** Safe when nothing is running, so callers never have to check first. */
 export function stopProgram(): void {
-  if (currentRun) currentRun.cancelled = true;
+  if (!currentRun) return;
+
+  currentRun.cancelled = true;
+  const waiting = [...currentRun.aborts];
+  currentRun.aborts.clear();
+  for (const abort of waiting) abort(new ProgramStopped());
 }
 
 /** Both the Run button and the capability call this. */
 export async function runProgram(workspace: Blockly.Workspace): Promise<void> {
   stopProgram();
 
-  const run: Run = { cancelled: false };
+  const run: Run = { cancelled: false, aborts: new Set() };
   currentRun = run;
-  setState({ running: true, output: [], error: null });
+  store.setState({ running: true, error: null });
+  // Scratch leaves the sprite where the last run left it. A child who runs the
+  // same program twice and gets two different pictures reads the blocks as
+  // broken, and has no cheap way to put the sprite back.
+  resetSprite();
 
   // Without a yield inside loops the program holds the main thread and Stop
   // never gets a chance to land.
   javascriptGenerator.INFINITE_LOOP_TRAP = "await __tick();\n";
   const code = javascriptGenerator.workspaceToCode(workspace);
 
-  // Checked on both sides of the yield: a second run can start, and replace
-  // currentRun, while this one is parked on the timer.
-  const tick = async (): Promise<void> => {
-    if (run.cancelled) throw new ProgramStopped();
-    await new Promise((resolve) => setTimeout(resolve, 0));
-    if (run.cancelled) throw new ProgramStopped();
+  const session: RunSession = {
+    // Unlike print, which returns quietly, this throws: a replaced run has to
+    // stop where it stands rather than play out its whole body against the
+    // sprite the new run is already moving.
+    guard() {
+      if (run.cancelled || currentRun !== run) throw new ProgramStopped();
+    },
+    sleep(ms) {
+      return new Promise<void>((resolve, reject) => {
+        if (run.cancelled || currentRun !== run) {
+          reject(new ProgramStopped());
+          return;
+        }
+
+        const abort = (reason: unknown): void => {
+          clearTimeout(timer);
+          reject(reason);
+        };
+        const timer = setTimeout(() => {
+          run.aborts.delete(abort);
+          resolve();
+        }, ms);
+        run.aborts.add(abort);
+      });
+    },
   };
-  const print = (value: unknown): void => {
-    if (currentRun !== run) return;
-    setState({ output: [...state.output, { id: state.output.length, text: String(value) }] });
+
+  /**
+   * A frame each time round a loop, as Scratch does, or a four-times loop
+   * finishes inside one frame and the sprite never appears to move. Through
+   * `sleep` rather than a bare timer, so Stop still lands at once.
+   */
+  const tick = async (): Promise<void> => {
+    session.guard();
+    await session.sleep(FRAME);
+    session.guard();
   };
 
   try {
-    const program = new Function("__tick", "print", `return (async () => {\n${code}\n})();`) as (
+    // `new Function` is typed as returning `Function`, which takes any
+    // arguments and returns any: the cast is the only way to say what this one
+    // is, and the string above is what makes it true.
+    const program = new Function("__tick", "__sprite", `return (async () => {\n${code}\n})();`) as (
       tick: () => Promise<void>,
-      print: (value: unknown) => void,
+      sprite: ReturnType<typeof createSpriteApi>,
     ) => Promise<void>;
 
-    await program(tick, print);
+    await program(tick, createSpriteApi(session));
   } catch (error) {
     if (!(error instanceof ProgramStopped) && currentRun === run) {
-      setState({ error: error instanceof Error ? error.message : String(error) });
+      store.setState({ error: error instanceof Error ? error.message : String(error) });
     }
   } finally {
+    run.aborts.clear();
     if (currentRun === run) {
       currentRun = null;
-      setState({ running: false });
+      // Only the run that is still current clears the bubble, or a stopped run
+      // would wipe what the run replacing it has already said.
+      setSaying(null);
+      store.setState({ running: false });
     }
   }
 }
+
+/** For `useStore` in components; everything else goes through the functions above. */
+export { store as runStore };
