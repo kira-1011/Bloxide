@@ -179,7 +179,10 @@ Rules:
 - No `dangerous: true` on a Voxide action. It demands a click to confirm.
 - No hat block that names a mouse. A program runs top to bottom when the child
   says "run the program".
-- No mode that hides blocks the child might ask for.
+- No mode that hides blocks without the child asking. They can fold the palette
+  down to its category rail for room, by pressing Hide or saying "hide the
+  blocks"; the categories stay on screen, any block can still be asked for by
+  name, and pressing a category or saying "show the blocks" opens it again.
 - No emoji as icons. Inline stroke SVG only.
 - No motion that cannot be interrupted, and none at all under
   `prefers-reduced-motion`.

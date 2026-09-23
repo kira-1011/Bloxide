@@ -16,6 +16,7 @@ import { BLOCK_NAMES, resolveBlockType, slotDefaults, spokenName } from "@/block
 import { isProgramRunning, runProgram, stopProgram } from "@/run/runner";
 import { isZoomDirection, zoomWorkspace, ZOOM_DIRECTIONS } from "@/blockly/workspace-zoom";
 import { growStage } from "@/sprite/stage-size";
+import { isPaletteOpen, setPaletteOpen } from "@/palette/palette-store";
 
 // Every capability the agent can invoke. One block, one connection or one value
 // per utterance, and never `dangerous: true` — it asks for a click to confirm.
@@ -319,6 +320,16 @@ export function resizeStage({ size }: { size: string }): string {
   return `Made the stage ${size}.`;
 }
 
+export function showBlocks({ visible }: { visible: string }): string {
+  if (visible !== "show" && visible !== "hide") return "I can show the blocks or hide them.";
+  const open = visible === "show";
+  if (isPaletteOpen() === open)
+    return open ? "The blocks are already showing." : "The blocks are already hidden.";
+  setPaletteOpen(open);
+  // Hidden blocks can still be asked for by name, and the child should know it.
+  return open ? "Showing the blocks." : "Hid the blocks. You can still ask for any block by name.";
+}
+
 export const VOICE_ACTIONS = {
   addBlock: defineAction({
     description: "Add a block to the workspace",
@@ -435,6 +446,19 @@ export const VOICE_ACTIONS = {
       },
     },
     handler: ({ direction }) => zoom({ direction }),
+  }),
+  showBlocks: defineAction({
+    description:
+      "Show or hide the list of blocks on the left, to make more room. Blocks can still be added by name while it is hidden.",
+    params: {
+      visible: {
+        type: "string",
+        required: true,
+        enum: ["show", "hide"],
+        description: "show to open the block list, hide to fold it away",
+      },
+    },
+    handler: ({ visible }) => showBlocks({ visible }),
   }),
   resizeStage: defineAction({
     description: "Make the sprite stage bigger or smaller",

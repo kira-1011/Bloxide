@@ -1,6 +1,8 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useStore } from "zustand";
 import { hasActiveWorkspace } from "@/blockly/active-workspace";
 import { blocksIn, CATEGORIES, type CategoryId, type PaletteBlock } from "@/palette/catalogue";
+import { paletteStore, setPaletteOpen } from "@/palette/palette-store";
 import { addBlock } from "@/voice/handlers";
 
 /**
@@ -9,20 +11,42 @@ import { addBlock } from "@/voice/handlers";
  * The rail scrolls the list to a category and marks where you are. It does not
  * filter: hiding blocks would turn recognition into recall, and a misheard
  * category would silently change what the child thinks they can say.
+ *
+ * The child can fold it down to the rail for room. The categories stay on
+ * screen, and pressing one opens it again there.
  */
 export function BlockPalette() {
   const [current, setCurrent] = useState<CategoryId>("movement");
   const headings = useRef(new Map<CategoryId, HTMLHeadingElement>());
   const [said, setSaid] = useState("");
+  const { open } = useStore(paletteStore);
 
-  const jumpTo = (id: CategoryId) => {
-    setCurrent(id);
+  const scrollTo = (id: CategoryId) => {
     // DESIGN.md allows no motion at all under reduced motion, not just less.
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     headings.current.get(id)?.scrollIntoView({
       behavior: reduce ? "instant" : "smooth",
       block: "start",
     });
+  };
+
+  // A folded palette has no headings on screen to scroll to, so the jump waits
+  // for it to open.
+  const pending = useRef<CategoryId | null>(null);
+  useEffect(() => {
+    if (!open || !pending.current) return;
+    scrollTo(pending.current);
+    pending.current = null;
+  });
+
+  const jumpTo = (id: CategoryId) => {
+    setCurrent(id);
+    if (open) {
+      scrollTo(id);
+      return;
+    }
+    pending.current = id;
+    setPaletteOpen(true);
   };
 
   // The same path the voice command takes, so a block placed by hand is
@@ -33,7 +57,9 @@ export function BlockPalette() {
   };
 
   return (
-    <div className="flex w-[348px] shrink-0 border-r border-edge bg-surface">
+    <div
+      className={`flex shrink-0 border-r border-edge bg-surface ${open ? "w-[348px]" : "w-[72px]"}`}
+    >
       <div className="flex w-[72px] shrink-0 flex-col items-center gap-1.5 border-r border-slate-200 bg-surface-sunken py-3">
         {CATEGORIES.map((category) => {
           const active = category.id === current;
@@ -63,27 +89,53 @@ export function BlockPalette() {
             </button>
           );
         })}
+
+        <button
+          type="button"
+          onClick={() => setPaletteOpen(!open)}
+          aria-label={open ? "Hide the blocks" : "Show the blocks"}
+          aria-expanded={open}
+          className="mt-auto flex w-[60px] cursor-pointer flex-col items-center gap-1 rounded-2xl py-2 text-ink-muted hover:bg-bg focus-visible:outline-2 focus-visible:outline-ink"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            className="size-8 fill-none stroke-current stroke-[2.5]"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <path d={open ? "M15 6l-6 6 6 6" : "M9 6l6 6-6 6"} />
+          </svg>
+          <span className="text-[10px] font-bold tracking-wide">{open ? "HIDE" : "SHOW"}</span>
+        </button>
       </div>
 
-      <div className="flex min-w-0 grow flex-col gap-1 overflow-y-auto py-3 pr-3 pl-3.5">
-        {CATEGORIES.map((category) => (
-          <section key={category.id} className="flex flex-col gap-1">
-            <h2
-              ref={(node) => {
-                if (node) headings.current.set(category.id, node);
-                else headings.current.delete(category.id);
-              }}
-              className="flex items-center gap-1.5 pt-1.5 text-[11px] font-bold tracking-wide text-ink-muted"
-            >
-              <span className={`size-2.5 rounded ${category.fill}`} aria-hidden="true" />
-              {category.label.toUpperCase()}
-            </h2>
-            {blocksIn(category.id).map((block) => (
-              <PaletteBlockRow key={block.id} block={block} fill={category.fill} onPlace={place} />
-            ))}
-          </section>
-        ))}
-      </div>
+      {open ? (
+        <div className="flex min-w-0 grow flex-col gap-1 overflow-y-auto py-3 pr-3 pl-3.5">
+          {CATEGORIES.map((category) => (
+            <section key={category.id} className="flex flex-col gap-1">
+              <h2
+                ref={(node) => {
+                  if (node) headings.current.set(category.id, node);
+                  else headings.current.delete(category.id);
+                }}
+                className="flex items-center gap-1.5 pt-1.5 text-[11px] font-bold tracking-wide text-ink-muted"
+              >
+                <span className={`size-2.5 rounded ${category.fill}`} aria-hidden="true" />
+                {category.label.toUpperCase()}
+              </h2>
+              {blocksIn(category.id).map((block) => (
+                <PaletteBlockRow
+                  key={block.id}
+                  block={block}
+                  fill={category.fill}
+                  onPlace={place}
+                />
+              ))}
+            </section>
+          ))}
+        </div>
+      ) : null}
 
       <output className="sr-only">{said}</output>
     </div>

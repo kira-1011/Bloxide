@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { setActiveWorkspace } from "@/blockly/active-workspace";
 import { getBlockNumber, numberBlocks } from "@/blockly/block-view";
 import { initBlocklyLocale } from "@/blockly/locale";
+import { isPaletteOpen, setPaletteOpen } from "@/palette/palette-store";
 import {
   addBlock,
   attachBlock,
@@ -12,6 +13,7 @@ import {
   haltProgram,
   resizeStage,
   setParam,
+  showBlocks,
   startProgram,
   VOICE_ACTIONS,
   zoom,
@@ -562,5 +564,35 @@ describe("resizeStage", () => {
 describe("zoom", () => {
   it("answers a word it does not know instead of guessing", () => {
     expect(zoom({ direction: "sideways" })).toBe("I can zoom in, zoom out, or go back to normal.");
+  });
+});
+
+describe("showBlocks", () => {
+  afterEach(() => {
+    setPaletteOpen(true);
+  });
+
+  it("hides the blocks, and says they can still be asked for", () => {
+    expect(showBlocks({ visible: "hide" })).toBe(
+      "Hid the blocks. You can still ask for any block by name.",
+    );
+    expect(isPaletteOpen()).toBe(false);
+  });
+
+  it("brings them back", () => {
+    setPaletteOpen(false);
+
+    expect(showBlocks({ visible: "show" })).toBe("Showing the blocks.");
+    expect(isPaletteOpen()).toBe(true);
+  });
+
+  it("says so when there is nothing to change", () => {
+    expect(showBlocks({ visible: "show" })).toBe("The blocks are already showing.");
+  });
+
+  it("still adds a block by name while they are hidden", () => {
+    showBlocks({ visible: "hide" });
+
+    expect(addBlock({ type: "move" })).toMatch(/^Added a move block/);
   });
 });

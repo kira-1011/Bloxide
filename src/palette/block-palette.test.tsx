@@ -7,6 +7,7 @@ import { setActiveWorkspace } from "@/blockly/active-workspace";
 import { initBlocklyLocale } from "@/blockly/locale";
 import { BlockPalette } from "@/palette/block-palette";
 import { PALETTE_BLOCKS } from "@/palette/catalogue";
+import { isPaletteOpen, setPaletteOpen } from "@/palette/palette-store";
 import { BLOCK_TYPES } from "@/blockly/toolbox";
 
 initBlocklyLocale();
@@ -19,6 +20,7 @@ beforeEach(() => {
 
 afterEach(() => {
   setActiveWorkspace(null);
+  setPaletteOpen(true);
 });
 
 const rail = (label: string) =>
@@ -107,6 +109,31 @@ describe("BlockPalette", () => {
     fireEvent.click(screen.getByRole("button", { name: /^Add move/ }));
 
     expect(screen.getByRole("status")).toHaveTextContent("");
+  });
+
+  it("folds down to the rail for room, and opens again", () => {
+    render(<BlockPalette />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Hide the blocks" }));
+
+    expect(isPaletteOpen()).toBe(false);
+    expect(screen.queryByRole("button", { name: /^Add move/ })).not.toBeInTheDocument();
+    // The categories stay, so the child still sees what there is.
+    expect(rail("Control")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Show the blocks" }));
+    expect(screen.getByRole("button", { name: /^Add move/ })).toBeInTheDocument();
+  });
+
+  it("opens a folded palette at the category pressed", () => {
+    setPaletteOpen(false);
+    render(<BlockPalette />);
+
+    fireEvent.click(rail("Look"));
+
+    expect(isPaletteOpen()).toBe(true);
+    const scrolled = vi.mocked(Element.prototype.scrollIntoView).mock.instances[0];
+    expect(scrolled).toHaveTextContent("LOOK");
   });
 
   it("lists exactly the blocks the toolbox offers, so neither can fall behind", () => {
