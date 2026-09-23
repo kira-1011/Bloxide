@@ -25,14 +25,6 @@ export const BLOXIDE_THEME: Theme = Theme.defineTheme("bloxide", {
     loop_blocks: { colourPrimary: CONTROL },
     control_blocks: { colourPrimary: CONTROL },
   },
-  // The palette rail carries the same four fills, so a category reads the same
-  // on the block and in the list it came from.
-  categoryStyles: {
-    movement_category: { colour: MOVEMENT },
-    say_category: { colour: SAY },
-    look_category: { colour: LOOK },
-    control_category: { colour: CONTROL },
-  },
   fontStyle: { family: '"Baloo 2", cursive', weight: "600", size: BLOCK_TEXT_PT },
   // A hat is a mouse instruction drawn on a block; DESIGN.md forbids one.
   startHats: false,

@@ -63,7 +63,7 @@ describe("the spoken vocabulary", () => {
   });
 });
 
-describe("TOOLBOX", () => {
+describe("TOOLBOX_CATEGORIES", () => {
   it("offers every block through a named category", () => {
     expect(categories.length).toBeGreaterThan(0);
     for (const category of categories) {
