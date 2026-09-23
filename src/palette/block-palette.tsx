@@ -1,5 +1,7 @@
 import { useRef, useState } from "react";
+import { hasActiveWorkspace } from "@/blockly/active-workspace";
 import { blocksIn, CATEGORIES, type CategoryId, type PaletteBlock } from "@/palette/catalogue";
+import { addBlock } from "@/voice/handlers";
 
 /**
  * Every block the child may ask for, always on screen.
@@ -11,10 +13,18 @@ import { blocksIn, CATEGORIES, type CategoryId, type PaletteBlock } from "@/pale
 export function BlockPalette() {
   const [current, setCurrent] = useState<CategoryId>("movement");
   const headings = useRef(new Map<CategoryId, HTMLHeadingElement>());
+  const [said, setSaid] = useState("");
 
   const jumpTo = (id: CategoryId) => {
     setCurrent(id);
     headings.current.get(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
+  // The same path the voice command takes, so a block placed by hand is
+  // numbered, selected and confirmed exactly like one placed by speaking.
+  const place = (type: string) => {
+    if (!hasActiveWorkspace()) return;
+    setSaid(addBlock({ type }));
   };
 
   return (
@@ -64,11 +74,13 @@ export function BlockPalette() {
               {category.label.toUpperCase()}
             </h2>
             {blocksIn(category.id).map((block) => (
-              <PaletteBlockRow key={block.id} block={block} fill={category.fill} />
+              <PaletteBlockRow key={block.id} block={block} fill={category.fill} onPlace={place} />
             ))}
           </section>
         ))}
       </div>
+
+      <output className="sr-only">{said}</output>
     </div>
   );
 }
@@ -76,13 +88,19 @@ export function BlockPalette() {
 interface PaletteBlockRowProps {
   readonly block: PaletteBlock;
   readonly fill: string;
+  readonly onPlace: (type: string) => void;
 }
 
-/** Display only for now: speaking is what places a block. */
-function PaletteBlockRow({ block, fill }: PaletteBlockRowProps) {
+/** Voice reaches every block; this keeps keyboard and pointer reaching them too. */
+function PaletteBlockRow({ block, fill, onPlace }: PaletteBlockRowProps) {
   return (
-    <div
-      className={`flex items-center gap-1.5 rounded-[9px] px-2.5 py-1.5 font-display text-sm font-semibold text-white ${fill}`}
+    <button
+      type="button"
+      onClick={() => onPlace(block.id)}
+      // Spelled out because the parts are separate spans, which an accessible
+      // name would run together into "move10steps".
+      aria-label={`Add ${block.parts.map((part) => ("word" in part ? part.word : part.slot)).join(" ")}`}
+      className={`flex cursor-pointer items-center gap-1.5 rounded-[9px] px-2.5 py-1.5 text-left font-display text-sm font-semibold text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink ${fill}`}
     >
       {block.parts.map((part) =>
         "word" in part ? (
@@ -100,6 +118,6 @@ function PaletteBlockRow({ block, fill }: PaletteBlockRowProps) {
           </span>
         ),
       )}
-    </div>
+    </button>
   );
 }
