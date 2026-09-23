@@ -52,7 +52,7 @@ export function SpriteStage() {
   }, [sprite]);
 
   return (
-    <div className="flex flex-col items-center gap-2 border-l border-slate-200 bg-slate-50 p-4">
+    <div className="flex min-w-60 flex-col items-center gap-2 border-l border-slate-200 bg-slate-50 p-4">
       <canvas
         ref={canvasRef}
         role="img"

@@ -19,9 +19,11 @@ export default function BlocklyWorkspace() {
         <span className="font-display text-[26px] font-bold text-ink">Bloxide</span>
       </header>
 
-      <div className="flex min-h-0 grow">
+      {/* The stage gives way before the editor does, and past that the row
+          scrolls, so no zone is ever squeezed out of reach. */}
+      <div className="flex min-h-0 grow overflow-x-auto">
         <BlockPalette />
-        <div ref={containerRef} className="min-w-0 grow" />
+        <div ref={containerRef} className="min-w-[480px] grow" />
         <SpriteStage />
       </div>
 
