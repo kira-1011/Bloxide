@@ -140,3 +140,72 @@ describe("BlockPalette", () => {
     expect(PALETTE_BLOCKS.map((block) => block.id)).toEqual([...BLOCK_TYPES]);
   });
 });
+
+const row = (name: string) => screen.getByRole("button", { name });
+
+describe("BlockPalette shapes", () => {
+  it("draws a stack block notched above and tabbed below", () => {
+    render(<BlockPalette />);
+    const move = row("Add move 10 steps");
+
+    expect(move.querySelector('[data-notch="top"]')).toBeInTheDocument();
+    expect(move.querySelector('[data-notch="bottom"]')).toBeInTheDocument();
+    expect(move.querySelector("[data-mouth]")).not.toBeInTheDocument();
+  });
+
+  it("leaves a cap block with nothing to tab onto", () => {
+    render(<BlockPalette />);
+    const forever = row("Add forever");
+
+    expect(forever.querySelector('[data-notch="top"]')).toBeInTheDocument();
+    expect(forever.querySelector('[data-notch="bottom"]')).not.toBeInTheDocument();
+  });
+
+  it("opens a mouth on the blocks that wrap others", () => {
+    render(<BlockPalette />);
+
+    expect(row("Add repeat 10 times").querySelector("[data-mouth]")).toBeInTheDocument();
+    expect(row("Add forever").querySelector("[data-mouth]")).toBeInTheDocument();
+    expect(row("Add wait 1 seconds").querySelector("[data-mouth]")).not.toBeInTheDocument();
+  });
+
+  it("shapes every block the palette lists, so a new one cannot come out flat", () => {
+    render(<BlockPalette />);
+
+    for (const block of PALETTE_BLOCKS) {
+      const label = `Add ${block.parts.map((part) => ("word" in part ? part.word : part.slot)).join(" ")}`;
+      const drawn = row(label);
+      expect(Boolean(drawn.querySelector('[data-notch="top"]'))).toBe(block.shape.socketTop);
+      expect(Boolean(drawn.querySelector('[data-notch="bottom"]'))).toBe(block.shape.tabBottom);
+      expect(Boolean(drawn.querySelector("[data-mouth]"))).toBe(block.shape.mouth);
+    }
+  });
+
+  it("keeps the shape out of what a screen reader reads", () => {
+    render(<BlockPalette />);
+    const repeat = row("Add repeat 10 times");
+
+    for (const part of repeat.querySelectorAll("[data-notch], [data-mouth]")) {
+      expect(part).toHaveAttribute("aria-hidden", "true");
+    }
+    // The name is the words, not the notches.
+    expect(repeat).toHaveAccessibleName("Add repeat 10 times");
+  });
+
+  it("stays a native button, so a key reaches it as well as a pointer", () => {
+    const workspace = new Blockly.Workspace();
+    setActiveWorkspace(workspace as Blockly.WorkspaceSvg);
+    render(<BlockPalette />);
+    const forever = row("Add forever");
+
+    expect(forever.tagName).toBe("BUTTON");
+    expect(forever).not.toHaveAttribute("tabindex");
+
+    forever.focus();
+    expect(forever).toHaveFocus();
+    // What a browser turns Enter or Space on a focused button into.
+    fireEvent.click(document.activeElement ?? forever);
+
+    expect(workspace.getBlocksByType("bloxide_forever", false)).toHaveLength(1);
+  });
+});
