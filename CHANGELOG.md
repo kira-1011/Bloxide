@@ -3,6 +3,57 @@
 Progress on Bloxide, newest first. Written for anyone following the build, not
 just developers — see the Changelog section of AGENTS.md.
 
+## 2026-09-23
+
+The editor looks like the design, and every part of it can be reached without
+a mouse.
+
+### Added
+
+- **Press a block to place it.** The block list on the left is now the real
+  blocks, and pressing one puts it on the workspace, numbered and highlighted,
+  exactly as asking for it does. Blockly's own drawer of blocks is gone, so
+  there is one list rather than two showing the same thing.
+- **Blocks that show what holds what.** Repeat and forever are drawn with a
+  wide open mouth, and the blocks inside sit visibly within it, spaced apart,
+  instead of reading as one long stack. An empty repeat still shows its mouth,
+  so a child can see where blocks go. Every block keeps the puzzle-piece notch
+  a child who has used Scratch will recognise.
+- **You can see whether you are being heard.** A large microphone sits in the
+  same place at the bottom of the screen and changes colour: grey while
+  asleep, blue while listening, with the words it heard written beside it, and
+  purple while answering, with the reply. It no longer floats in a corner,
+  because a control that moves cannot be aimed at.
+- **More room when you want it.** "Hide the blocks" folds the block list down
+  to its four colours; "show the blocks" or pressing a colour opens it again.
+  Any block can still be asked for by name while it is folded, and the reply
+  says so. "Make the stage bigger" and "zoom in" work the same way, and so
+  does dragging the stage's edge or pressing the arrow keys on it.
+- **Zoom and delete as big buttons.** The small grey zoom icons and the bin
+  are replaced by large buttons in the corner of the workspace. The bin only
+  ever worked for someone who could drag a block into it; the new delete
+  button removes the block that is highlighted.
+
+### Fixed
+
+- **"Voice is used up" says so.** When the voice service runs out of time, the
+  microphone used to say "I could not hear you", which sounds like the child
+  did something wrong. It now says "Voice is used up for now. Ask a grown-up."
+- **Nothing jumps for a child who asked for stillness.** Choosing a colour in
+  the block list scrolls without animation when the computer is set to reduce
+  motion.
+- **The workspace stays usable on a small screen.** On a narrow laptop the
+  block list and stage left almost no room to build. The workspace now keeps a
+  usable width, and the row scrolls sideways past that.
+
+### Next
+
+- The new spoken commands for hiding blocks, resizing the stage and zooming
+  reach the assistant only once the site is redeployed.
+- The listening and answering colours have been tested but not yet seen in a
+  live call: the voice service had run out of time.
+- Nobody under twelve has tried any of this yet.
+
 ## 2026-09-22
 
 ### Added
