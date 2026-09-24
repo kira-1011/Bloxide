@@ -20,23 +20,40 @@ export const voice: VoxideClient | null = publicKey
 let started: Promise<void> | null = null;
 
 /**
- * Loads the dashboard's config and, if it asks for one, arms the wake word.
- * Voxide's own widget did this; we draw our own mic, so we do it. Once per page,
- * however many times a remount asks.
+ * Loads the dashboard's config. Voxide's own widget did this; we draw our own
+ * mic, so we do it. Once per page, however many times a remount asks.
+ *
+ * Reads no audio: arming is deliberately not part of this, because the promise
+ * is memoised and a microphone granted later must still be able to arm.
  */
 export function startVoice(): Promise<void> {
   if (!voice) return Promise.resolve();
-  const client = voice;
-  started ??= client
+  started ??= voice
     .init()
-    .then(() => {
-      // The dashboard's default is to arm; only an explicit false opts out.
-      const autoArm = client.agentConfig?.wakeWord?.autoArm !== false;
-      if (autoArm && client.isWakeWordAvailable()) client.armWakeWord();
-    })
+    .then(() => {})
     .catch((error: unknown) => {
       // The mic still offers press-to-talk, which reports its own failure.
       console.warn("Voxide did not start", error);
     });
   return started;
+}
+
+/**
+ * Starts listening locally for the wake phrase. Only ever called with the
+ * microphone already granted: SpeechRecognition raises the browser's own
+ * permission prompt, which would land on the child before anything on screen
+ * had explained it.
+ */
+export function armWakeWord(): void {
+  if (!voice) return;
+  const client = voice;
+  void startVoice().then(() => {
+    // The dashboard's default is to arm; only an explicit false opts out.
+    const autoArm = client.agentConfig?.wakeWord?.autoArm !== false;
+    if (autoArm && client.isWakeWordAvailable()) client.armWakeWord();
+  });
+}
+
+export function disarmWakeWord(): void {
+  voice?.disarmWakeWord();
 }

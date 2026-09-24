@@ -1,5 +1,7 @@
 import { useEffect, type ReactNode } from "react";
-import { startVoice, voice } from "@/voice/client";
+import { useStore } from "zustand";
+import { armWakeWord, disarmWakeWord, startVoice, voice } from "@/voice/client";
+import { micPermissionStore } from "@/voice/mic-permission";
 import { VoiceMic } from "@/voice/voice-mic";
 import { MicGate } from "@/voice/mic-gate";
 
@@ -17,9 +19,19 @@ interface VoiceBarProps {
  * child who cannot aim cannot chase a floating launcher.
  */
 export function VoiceBar({ running, error, onRun, onStop }: VoiceBarProps) {
+  const { permission } = useStore(micPermissionStore);
+
   useEffect(() => {
     void startVoice();
   }, []);
+
+  // Arming and disarming follow the permission, so a microphone blocked
+  // mid-session stops the wake word and unblocking it starts it again.
+  useEffect(() => {
+    if (permission !== "granted") return;
+    armWakeWord();
+    return disarmWakeWord;
+  }, [permission]);
 
   return (
     <div className="flex h-43 shrink-0 items-center gap-6 border-t-[3px] border-blue-200 bg-surface px-7">
