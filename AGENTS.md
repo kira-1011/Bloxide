@@ -169,7 +169,9 @@ is actually on the workspace rather than from what it believes it did.
 - The Blockly editor integration lives in `src/blockly/`, voice capabilities in
   `src/voice/`, our own block definitions in `src/blocks/`.
 - Small commits, conventional prefixes (`feat:`, `fix:`, `docs:`, `refactor:`,
-  `chore:`, `test:`, `perf:`, `build:`, `ci:`).
+  `chore:`, `test:`, `perf:`, `build:`, `ci:`). **Load the
+  `conventional-commit` skill before writing a message** — it owns the format:
+  imperative subject, no trailing full stop, body explaining why, footers last.
 - Never rewrite git history. No force-push, no squashing the initial commits.
   Amending a commit that has not been pushed is fine.
 - **Never credit an AI agent as commit author or co-author.** No
@@ -188,7 +190,7 @@ Write minimal comments. Code should be self-documenting.
 
 ## Skills
 
-Four installed skills carry rules this project follows. Load the relevant one
+Six installed skills carry rules this project follows. Load the relevant one
 before working in its area, not after.
 
 - **`vercel-react-best-practices`** — before writing or changing any React
@@ -210,11 +212,20 @@ before working in its area, not after.
 - **`typescript-advanced-types`** — before writing a type that is more than a
   shape: generics, conditional or mapped types, template literals, narrowing
   helpers, or anything derived from another type. See Type safety below.
+- **`conventional-commit`** — before writing any commit message. It is the
+  authority for the format: type, optional scope, imperative subject, body and
+  footers. See Commits below.
+- **`conventional-branch`** — before creating any branch. It is the authority
+  for the name's shape: lowercase, hyphen-separated, no underscores, no
+  consecutive or trailing hyphens. See Branches below.
 
-All four are committed to the repo under `.agents/skills/`, so a clone has them
-without anyone installing anything. `skills-lock.json` pins the versions. The
-`.claude/skills/` symlinks are machine-local and gitignored — recreate them with
-`npx skills install` if your agent reads from there.
+The first four are committed to the repo under `.agents/skills/`, so a clone has
+them without anyone installing anything. `skills-lock.json` pins the versions.
+The two conventional skills are user-level, in `~/.claude/skills/`, and are not
+in the repo — if your agent cannot see them, follow Branches and Commits below,
+which say the same thing. The `.claude/skills/` symlinks are machine-local and
+gitignored — recreate them with `npx skills install` if your agent reads from
+there.
 
 To update a skill, re-run its install from the repo root and commit the diff:
 
@@ -327,8 +338,14 @@ From Vitest's own guidance (see Docs), plus what has bitten us:
 
 ## Branches
 
-Conventional branch names, `<type>/<short-kebab-summary>`, the type matching
-the commit prefix the work will carry:
+**Load the `conventional-branch` skill before creating a branch.** It owns the
+naming rules — lowercase, hyphen-separated, no underscores, no consecutive or
+trailing hyphens.
+
+Where it and this file differ, this file wins on the **type list**: the skill
+offers `feature/`, `bugfix/`, `hotfix/`, `release/`, `chore/`, and we use the
+short aliases plus `refactor/`, `docs/` and `test/`, so the branch type always
+matches the commit prefix the work will carry. `<type>/<short-kebab-summary>`:
 
 ```
 feat/voice-add-block      fix/flyout-scroll-on-touch
