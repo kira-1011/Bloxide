@@ -13,14 +13,15 @@ vi.mock(import("blockly/core"), async (importOriginal) => {
   const named: Record<string, unknown> = { ...actual, ...Reflect.get(actual, "default") };
   return { ...named, inject: (...args: unknown[]) => inject(...args), svgResize: vi.fn() };
 });
-vi.mock(import("blockly/blocks"), () => ({}));
-// Mocked like locale and storage: the icon subclass needs a real Blockly.
+// Neither `blockly/blocks` nor the locale is mocked here any more: the palette
+// reads its silhouettes off blocks Blockly builds, so its definitions and
+// messages both have to be real by the time this tree renders.
+// Mocked like storage: the icon subclass needs a real Blockly.
 vi.mock(import("@/blockly/block-view"), () => ({
   numberBlocks: vi.fn(),
   findBlockByNumber: vi.fn(),
   getBlockNumber: vi.fn(),
 }));
-vi.mock(import("@/blockly/locale"), () => ({ initBlocklyLocale: vi.fn() }));
 
 beforeEach(() => {
   vi.stubGlobal(

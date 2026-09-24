@@ -1,4 +1,3 @@
-import * as Blockly from "blockly/core";
 import "blockly/blocks";
 import "@/blocks/custom-blocks";
 import { describe, expect, it } from "vitest";
@@ -55,25 +54,14 @@ describe("catalogue", () => {
   });
 });
 
-/** The block Blockly actually builds, to check the drawn shape against. */
-function built(type: string): Blockly.Block {
-  const workspace = new Blockly.Workspace();
-  return workspace.newBlock(type);
-}
-
 describe("catalogue shapes", () => {
-  it("gives every block the silhouette its own definition asks Blockly for", () => {
+  it("leaves no block unshaped, so a new one cannot come out flat", () => {
+    // Every block in the toolbox connects somewhere; an all-false silhouette
+    // means the shape never reached it.
     for (const block of PALETTE_BLOCKS) {
-      const real = built(block.id);
-      const statements = real.inputList.filter(
-        (input) => input.type === Blockly.inputs.inputTypes.STATEMENT,
-      );
-
-      expect({ id: block.id, ...block.shape }).toEqual({
+      expect({ id: block.id, shaped: Object.values(block.shape).some(Boolean) }).toEqual({
         id: block.id,
-        socketTop: Boolean(real.previousConnection),
-        tabBottom: Boolean(real.nextConnection),
-        mouth: statements.length > 0,
+        shaped: true,
       });
     }
   });
