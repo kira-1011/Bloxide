@@ -6,7 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { setActiveWorkspace } from "@/blockly/active-workspace";
 import { initBlocklyLocale } from "@/blockly/locale";
 import { BlockPalette } from "@/palette/block-palette";
-import { PALETTE_BLOCKS } from "@/palette/catalogue";
+import { PALETTE_BLOCKS, type PaletteBlock } from "@/palette/catalogue";
 import { isPaletteOpen, setPaletteOpen } from "@/palette/palette-store";
 import { BLOCK_TYPES } from "@/blockly/toolbox";
 
@@ -143,6 +143,9 @@ describe("BlockPalette", () => {
 
 const row = (name: string) => screen.getByRole("button", { name });
 
+const labelOf = (block: PaletteBlock) =>
+  `Add ${block.parts.map((part) => ("word" in part ? part.word : part.slot)).join(" ")}`;
+
 describe("BlockPalette shapes", () => {
   it("draws a stack block notched above and tabbed below", () => {
     render(<BlockPalette />);
@@ -169,12 +172,23 @@ describe("BlockPalette shapes", () => {
     expect(row("Add wait 1 seconds").querySelector("[data-mouth]")).not.toBeInTheDocument();
   });
 
+  it("sizes every block to its own words rather than to the panel", () => {
+    render(<BlockPalette />);
+
+    // jsdom has no layout, so widths cannot be measured here; the section
+    // stretches its children by default, and `self-start` is the one thing
+    // stopping every block coming out the same bar. The widths themselves are
+    // checked in a browser.
+    for (const block of PALETTE_BLOCKS) {
+      expect(row(labelOf(block))).toHaveClass("self-start");
+    }
+  });
+
   it("shapes every block the palette lists, so a new one cannot come out flat", () => {
     render(<BlockPalette />);
 
     for (const block of PALETTE_BLOCKS) {
-      const label = `Add ${block.parts.map((part) => ("word" in part ? part.word : part.slot)).join(" ")}`;
-      const drawn = row(label);
+      const drawn = row(labelOf(block));
       expect(Boolean(drawn.querySelector('[data-notch="top"]'))).toBe(block.shape.socketTop);
       expect(Boolean(drawn.querySelector('[data-notch="bottom"]'))).toBe(block.shape.tabBottom);
       expect(Boolean(drawn.querySelector("[data-mouth]"))).toBe(block.shape.mouth);

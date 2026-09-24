@@ -167,7 +167,10 @@ function PaletteBlockRow({ block, fill, onPlace }: PaletteBlockRowProps) {
       // Spelled out because the parts are separate spans, which an accessible
       // name would run together into "move10steps".
       aria-label={`Add ${block.parts.map((part) => ("word" in part ? part.word : part.slot)).join(" ")}`}
-      className={`relative flex cursor-pointer flex-col items-start rounded-[9px] text-left font-display text-[15px] font-semibold text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink ${fill}`}
+      // `self-start`, or the section stretches every block to the panel width
+      // and they all become the same bar. Half of what makes a block read as a
+      // puzzle piece is that a short one is visibly shorter.
+      className={`relative flex cursor-pointer flex-col items-start self-start rounded-[9px] text-left font-display text-[15px] font-semibold text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink ${fill}`}
     >
       {/* The hollows are painted in the panel's own colour rather than clipped
           out of the button, so the focus ring stays a whole rounded rectangle
