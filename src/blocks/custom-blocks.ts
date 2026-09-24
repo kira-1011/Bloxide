@@ -1,7 +1,7 @@
 // Before our definitions, so the text slot below replaces Blockly's rather
 // than being replaced by it.
 import "blockly/blocks";
-import { Blocks, common } from "blockly/core";
+import { Blocks, common, type JsonBlockDefinition } from "blockly/core";
 
 // Bloxide's own blocks, as JSON definitions.
 //
@@ -120,7 +120,7 @@ const DEFINITIONS = [
     style: "control_blocks",
     tooltip: "Run the blocks inside over and over.",
   },
-] as const;
+] as const satisfies readonly JsonBlockDefinition[];
 
 /**
  * The definitions themselves, so the palette can draw a block the way Blockly

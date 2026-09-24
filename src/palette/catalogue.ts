@@ -1,4 +1,6 @@
+import * as Blockly from "blockly/core";
 import { BLOCK_DEFINITIONS } from "@/blocks/custom-blocks";
+import { initBlocklyLocale } from "@/blockly/locale";
 import { TOOLBOX_CATEGORIES } from "@/blockly/toolbox";
 
 /**
@@ -26,9 +28,8 @@ export type BlockPart = { readonly word: string } | { readonly slot: string };
 export type KeyedPart = BlockPart & { readonly key: string };
 
 /**
- * The silhouette zelos gives a block, read off the same definition Blockly
- * renders from, so the palette entry and the workspace block are the same
- * object to look at.
+ * The silhouette zelos gives a block, read off the block Blockly itself builds,
+ * so the palette entry and the workspace block are the same object to look at.
  */
 export interface BlockShape {
   /** Something can connect above, so zelos indents the top edge. */
@@ -58,41 +59,22 @@ export const CATEGORIES: readonly Category[] = TOOLBOX_CATEGORIES.map((category)
   return { id, label: category.name, fill: FILLS[id] };
 });
 
-interface Argument {
-  readonly type: string;
-  readonly name: string;
-}
-
-interface Definition {
-  readonly message0: string;
-  readonly args0?: readonly Argument[];
-  readonly message1?: string;
-  readonly args1?: readonly Argument[];
-  /** `null` is how a JSON definition says "connects, checking nothing". */
-  readonly previousStatement?: null;
-  readonly nextStatement?: null;
-}
-
 /**
- * Repeat is Blockly's block, so its wording lives in Blockly's own messages
- * rather than in ours. Written out here because reading `Blockly.Msg` would
- * make the palette wait on the locale being installed first.
+ * Repeat is Blockly's block, so only its wording is copied here. Its shape is
+ * read off Blockly like every other block's; taking the words from
+ * `Blockly.Msg` as well is a separate decision.
  */
-const BORROWED: Record<string, Definition> = {
-  controls_repeat_ext: {
+const BORROWED: readonly Blockly.JsonBlockDefinition[] = [
+  {
+    type: "controls_repeat_ext",
     message0: "repeat %1 times",
     args0: [{ type: "input_value", name: "TIMES" }],
-    message1: "%1",
-    args1: [{ type: "input_statement", name: "DO" }],
-    previousStatement: null,
-    nextStatement: null,
   },
-};
+];
 
-const DEFINITIONS: ReadonlyMap<string, Definition> = new Map<string, Definition>([
-  ...BLOCK_DEFINITIONS.map((definition): [string, Definition] => [definition.type, definition]),
-  ...Object.entries(BORROWED),
-]);
+const DEFINITIONS: ReadonlyMap<string, Blockly.JsonBlockDefinition> = new Map(
+  [...BLOCK_DEFINITIONS, ...BORROWED].map((definition) => [definition.type, definition]),
+);
 
 /** The value a slot starts out holding, as the shadow block spells it. */
 function slotValue(inputs: Record<string, unknown> | undefined, name: string): string {
@@ -110,7 +92,7 @@ function slotValue(inputs: Record<string, unknown> | undefined, name: string): s
  */
 function partsOf(type: string, inputs: Record<string, unknown> | undefined): BlockPart[] {
   const definition = DEFINITIONS.get(type);
-  if (!definition) return [{ word: type }];
+  if (!definition?.message0) return [{ word: type }];
 
   const parts: BlockPart[] = [];
   for (const piece of definition.message0.split(/(%\d+)/)) {
@@ -121,32 +103,42 @@ function partsOf(type: string, inputs: Record<string, unknown> | undefined): Blo
       continue;
     }
 
+    // `JsonBlockArg` keeps an open-ended member, so the tag alone does not
+    // narrow `name` down to a string.
     const argument = definition.args0?.[Number(placeholder[1]) - 1];
-    if (!argument || argument.type !== "input_value") continue;
+    if (argument?.type !== "input_value" || typeof argument.name !== "string") continue;
     parts.push({ slot: slotValue(inputs, argument.name) });
   }
   return parts;
 }
 
-const NO_SHAPE: BlockShape = { socketTop: false, tabBottom: false, mouth: false };
-
 /**
- * The three connections a definition states, as the three things to draw.
+ * The three connections to draw, asked of the block Blockly builds.
  *
- * A cap block such as `forever` simply omits `nextStatement`, so absence is the
- * test — a stated `null` still means the connection exists.
+ * `jsonInit` is what turns `previousStatement` and an `input_statement` into
+ * connections, so reading them back off the built block is the one answer that
+ * cannot drift from the block the workspace renders. Working them out from the
+ * JSON here would be a second copy of that same logic.
  */
-function shapeOf(type: string): BlockShape {
-  const definition = DEFINITIONS.get(type);
-  if (!definition) return NO_SHAPE;
-
-  const inputs = [...(definition.args0 ?? []), ...(definition.args1 ?? [])];
+function shapeOf(workspace: Blockly.Workspace, type: string): BlockShape {
+  const block = workspace.newBlock(type);
   return {
-    socketTop: definition.previousStatement !== undefined,
-    tabBottom: definition.nextStatement !== undefined,
-    mouth: inputs.some((argument) => argument.type === "input_statement"),
+    socketTop: Boolean(block.previousConnection),
+    tabBottom: Boolean(block.nextConnection),
+    mouth: block.inputList.some((input) => input.type === Blockly.inputs.inputTypes.STATEMENT),
   };
 }
+
+// Blockly's own blocks name their words through `%{BKY_…}`, and `jsonInit`
+// throws on a reference it cannot expand, so the locale has to be installed
+// before the first `newBlock`. Idempotent, and the palette already ships in the
+// same lazy chunk as the editor that installs it.
+initBlocklyLocale();
+
+// Headless: no DOM, no renderer, no `inject`. It exists only to hold the blocks
+// `shapeOf` reads, and nothing keeps them afterwards, so it is disposed as soon
+// as the silhouettes are out.
+const SHAPES = new Blockly.Workspace();
 
 /** Parts are authored in order and never reorder, so position names them. */
 export const PALETTE_BLOCKS: readonly PaletteBlock[] = TOOLBOX_CATEGORIES.flatMap((category) =>
@@ -157,9 +149,11 @@ export const PALETTE_BLOCKS: readonly PaletteBlock[] = TOOLBOX_CATEGORIES.flatMa
       ...part,
       key: `${entry.type}-${index}`,
     })),
-    shape: shapeOf(entry.type),
+    shape: shapeOf(SHAPES, entry.type),
   })),
 );
+
+SHAPES.dispose();
 
 export function blocksIn(category: CategoryId): readonly PaletteBlock[] {
   return PALETTE_BLOCKS.filter((block) => block.category === category);
