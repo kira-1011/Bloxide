@@ -23,8 +23,6 @@ const ROW_HEIGHT = 46;
 const MOUTH_RIGHT_PADDING = 12;
 // Above and below the inner blocks, so they read as held rather than stacked.
 const MOUTH_PADDING = 12;
-// Between blocks in a stack, so each one reads as its own sentence.
-const STACK_GAP = 10;
 
 const { arc, point } = utils.svgPaths;
 
@@ -65,8 +63,6 @@ class BloxideRenderInfo extends zelos.RenderInfo {
   // it and the pair reads as a stack. Widening it to wrap what it holds, as the
   // design draws it, makes the opening unmistakable.
   protected override computeBounds_(): void {
-    // A stack's height is summed without the gaps the drawer puts between its
-    // blocks, so the mouth would come up short by one gap per join.
     for (const row of this.rows) {
       for (const element of row.elements) {
         if (!blockRendering.Types.isStatementInput(element)) continue;
@@ -74,15 +70,6 @@ class BloxideRenderInfo extends zelos.RenderInfo {
         // offset, so moving it sets the blocks in from the arm and keeps the
         // notch above them lined up.
         element.notchOffset += INNER_INSET;
-        let joins = 0;
-        for (
-          let block = element.connectedBlock?.getNextBlock();
-          block;
-          block = block.getNextBlock()
-        ) {
-          joins++;
-        }
-        element.height += joins * STACK_GAP;
       }
     }
     super.computeBounds_();
@@ -102,14 +89,6 @@ class BloxideDrawer extends zelos.Drawer {
     if (!connection) return;
     const offset = connection.getOffsetInBlock();
     connection.setOffsetInBlock(offset.x, offset.y + MOUTH_PADDING);
-  }
-
-  protected override positionNextConnection_(): void {
-    super.positionNextConnection_();
-    const connection = this.info_.bottomRow.connection?.connectionModel;
-    if (!connection) return;
-    const offset = connection.getOffsetInBlock();
-    connection.setOffsetInBlock(offset.x, offset.y + STACK_GAP);
   }
 }
 
