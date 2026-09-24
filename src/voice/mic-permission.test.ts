@@ -4,6 +4,7 @@ import {
   checkMicPermission,
   getMicPermission,
   micPermissionStore,
+  retryMic,
   watchMicPermission,
 } from "@/voice/mic-permission";
 
@@ -135,14 +136,49 @@ describe("askForMic", () => {
     await expect(askForMic()).resolves.toBe("no-mic");
   });
 
-  it("treats a microphone another app is holding as one it cannot find", async () => {
+  it("tells a microphone another app is holding apart from a missing one", async () => {
     giveMicrophone(refusingMic("NotReadableError"));
 
-    await expect(askForMic()).resolves.toBe("no-mic");
+    await expect(askForMic()).resolves.toBe("mic-busy");
   });
 
   it("does not throw where the browser has no getUserMedia", async () => {
     await expect(askForMic()).resolves.toBe("unsupported");
+  });
+});
+
+describe("retryMic", () => {
+  it("only looks again where a blocked permission can be read back", async () => {
+    const getUserMedia = vi.fn(grantingMic);
+    giveMicrophone(getUserMedia);
+    givePermissionsApi(fakeStatus("granted"));
+    micPermissionStore.setState({ permission: "denied" });
+
+    // Chrome will not prompt twice; the browser's own setting is the way back.
+    await expect(retryMic()).resolves.toBe("granted");
+    expect(getUserMedia).not.toHaveBeenCalled();
+  });
+
+  it("asks again where no Permissions API can ever report a change", async () => {
+    const getUserMedia = vi.fn(grantingMic);
+    giveMicrophone(getUserMedia);
+    givePermissionsApi(null);
+    micPermissionStore.setState({ permission: "denied" });
+
+    // Firefox and Safari publish nothing to watch, and do prompt again, so a
+    // dismissal must not lock the child out for the rest of the session.
+    await expect(retryMic()).resolves.toBe("granted");
+    expect(getUserMedia).toHaveBeenCalledOnce();
+  });
+
+  it("asks from every other state", async () => {
+    const getUserMedia = vi.fn(grantingMic);
+    giveMicrophone(getUserMedia);
+    givePermissionsApi(fakeStatus("prompt"));
+    micPermissionStore.setState({ permission: "ask" });
+
+    await expect(retryMic()).resolves.toBe("granted");
+    expect(getUserMedia).toHaveBeenCalledOnce();
   });
 });
 

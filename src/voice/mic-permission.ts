@@ -11,6 +11,7 @@ export type MicPermission =
   | "granted"
   | "denied"
   | "no-mic"
+  | "mic-busy"
   | "unsupported";
 
 interface MicPermissionState {
@@ -72,7 +73,9 @@ function nameOf(error: unknown): string {
 async function failureFrom(error: unknown): Promise<MicPermission> {
   const name = nameOf(error);
   if (name === "NotFoundError" || name === "OverconstrainedError") return "no-mic";
-  if (name === "NotReadableError") return "no-mic";
+  // The microphone is there, another program is holding it, so "plug one in"
+  // would be the wrong thing to ask of the grown-up.
+  if (name === "NotReadableError") return "mic-busy";
   if (name === "NotAllowedError") {
     // Chrome rejects the same way whether the prompt was refused or dismissed.
     // A permission still sitting at "prompt" was dismissed, and asking again
@@ -80,6 +83,11 @@ async function failureFrom(error: unknown): Promise<MicPermission> {
     return (await queryPermission()) === "ask" ? "ask" : "denied";
   }
   return "denied";
+}
+
+/** Null where nothing can see the permission, so nothing can watch it either. */
+async function canQueryPermission(): Promise<boolean> {
+  return (await queryStatus()) !== null;
 }
 
 /** Reads the current permission without prompting. */
@@ -114,6 +122,22 @@ export async function askForMic(): Promise<MicPermission> {
     setPermission(await failureFrom(error));
   }
   return getMicPermission();
+}
+
+/**
+ * The way back from a failure, wherever the child presses.
+ *
+ * Chrome will not prompt a second time once denied, so there we can only look
+ * again and let the browser's own setting do the work. Firefox and Safari
+ * publish no microphone permission to query — nothing can be looked at and
+ * nothing can be watched — but they do prompt again, so asking is the only way
+ * back, and a press is not the load-time prompt the rule forbids.
+ */
+export async function retryMic(): Promise<MicPermission> {
+  if (getMicPermission() === "denied" && (await canQueryPermission())) {
+    return checkMicPermission();
+  }
+  return askForMic();
 }
 
 /**

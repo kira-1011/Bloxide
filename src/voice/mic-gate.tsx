@@ -1,10 +1,8 @@
 import { useEffect, type ReactNode } from "react";
 import { useStore } from "zustand";
-import { isWakeWordSupported } from "@voxide/react";
 import {
-  askForMic,
-  checkMicPermission,
   micPermissionStore,
+  retryMic,
   watchMicPermission,
   type MicPermission,
 } from "@/voice/mic-permission";
@@ -22,23 +20,27 @@ const NOTICES = {
   asking: { title: "Choose Allow", action: null },
   denied: { title: "My microphone is blocked", action: "I fixed it" },
   "no-mic": { title: "I cannot find a microphone", action: "Try again" },
+  "mic-busy": { title: "Something else is using the microphone", action: "Try again" },
   unsupported: { title: "This browser cannot hear you", action: null },
 } as const satisfies Record<Blocked, Notice>;
 
 function bodyFor(permission: Blocked): string {
+  // "Allow" lives in the browser's own box, which no part of Bloxide can
+  // reach and no sentence can press, so the grown-up is named for that step.
   if (permission === "ask") {
-    // Feature-detected, because the wake word is Chrome and Edge only and a
-    // child told to say "Hey Bloxide" in Firefox waits forever.
-    return isWakeWordSupported()
-      ? "Press the big button, then choose Allow. After that you can just talk to me."
-      : "Press the big button, then choose Allow. After that, press the mic to talk.";
+    return "Press the big button. Then a grown-up chooses Allow in the box your browser shows.";
   }
-  if (permission === "asking") return "Your browser is asking. Choose Allow so I can hear you.";
+  if (permission === "asking") {
+    return "Your browser is asking. A grown-up chooses Allow so I can hear you.";
+  }
   if (permission === "denied") {
     return "Ask a grown-up to press the icon next to the web address, find Microphone and choose Allow. Then press the big button.";
   }
   if (permission === "no-mic") {
     return "Ask a grown-up to plug one in, or turn it on. Then press the big button.";
+  }
+  if (permission === "mic-busy") {
+    return "Ask a grown-up to close whatever is using it. Then press the big button.";
   }
   return "Ask a grown-up to open Bloxide in Chrome or Edge.";
 }
@@ -62,16 +64,13 @@ export function MicGate({ children }: MicGateProps) {
   if (permission === "unknown") return <div className="grow" />;
 
   const { title, action } = NOTICES[permission];
-  // A denied permission never prompts again, so the way back is the browser's
-  // own setting; all we can do is look again.
-  const retry = permission === "denied" ? checkMicPermission : askForMic;
 
   return (
     <div className="flex min-w-0 grow items-center gap-6">
       {action ? (
         <button
           type="button"
-          onClick={() => void retry()}
+          onClick={() => void retryMic()}
           aria-label={action}
           className="flex size-26 shrink-0 cursor-pointer items-center justify-center rounded-full bg-voice-asleep transition-colors hover:bg-slate-400 focus-visible:outline-4 focus-visible:outline-offset-8 focus-visible:outline-ink"
         >

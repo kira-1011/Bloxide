@@ -1,13 +1,7 @@
 import { act, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { isWakeWordSupported } from "@voxide/react";
 import { MicGate } from "@/voice/mic-gate";
 import { getMicPermission, micPermissionStore } from "@/voice/mic-permission";
-
-vi.mock(import("@voxide/react"), async (importOriginal) => ({
-  ...(await importOriginal()),
-  isWakeWordSupported: vi.fn(() => true),
-}));
 
 function fakeStatus(state: string) {
   const listeners = new Set<() => void>();
@@ -95,18 +89,48 @@ describe("MicGate", () => {
     expect(screen.getByText("the mic")).toBeInTheDocument();
   });
 
-  it("promises press-to-talk where the wake word cannot work", async () => {
-    vi.mocked(isWakeWordSupported).mockReturnValue(false);
+  it("hands the step it cannot reach to a grown-up", async () => {
     giveMicrophone(granting);
     givePermissionsApi(fakeStatus("prompt"));
 
     renderGate();
     await settled("ask");
 
+    // "Allow" is in the browser's own box: no click of ours and no sentence
+    // the child speaks can press it.
     expect(
       screen.getByText(
-        "Press the big button, then choose Allow. After that, press the mic to talk.",
+        "Press the big button. Then a grown-up chooses Allow in the box your browser shows.",
       ),
+    ).toBeInTheDocument();
+  });
+
+  it("asks again where a blocked permission can never be read back", async () => {
+    const getUserMedia = vi.fn(granting);
+    giveMicrophone(getUserMedia);
+    givePermissionsApi(null);
+    micPermissionStore.setState({ permission: "denied" });
+
+    renderGate();
+    await settled("denied");
+
+    await act(async () => screen.getByRole("button", { name: "I fixed it" }).click());
+
+    expect(getUserMedia).toHaveBeenCalledOnce();
+    expect(screen.getByText("the mic")).toBeInTheDocument();
+  });
+
+  it("does not tell a grown-up to plug in a microphone another app is holding", async () => {
+    giveMicrophone(granting);
+    givePermissionsApi(null);
+    micPermissionStore.setState({ permission: "mic-busy" });
+
+    renderGate();
+    await settled("mic-busy");
+
+    expect(screen.getByText("Something else is using the microphone")).toBeInTheDocument();
+    expect(
+      screen.getByText("Ask a grown-up to close whatever is using it. Then press the big button."),
     ).toBeInTheDocument();
   });
 
