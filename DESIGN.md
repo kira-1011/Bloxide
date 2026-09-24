@@ -111,8 +111,8 @@ decision and should be defensible as one.
 | Heard transcript    | 22px | 500                 |
 | Assistant answer    | 18px | 600                 |
 | Panel heading       | 24px | 700                 |
-| Palette block       | 14px | 600                 |
-| Category label      | 11px | 700, 0.7px tracking |
+| Palette block       | 15px | 600                 |
+| Category label      | 12px | 700, 0.7px tracking |
 
 Body text never goes below 14px, and never below 18px for anything the child
 is expected to read while speaking.

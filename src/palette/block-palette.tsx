@@ -111,15 +111,15 @@ export function BlockPalette() {
       </div>
 
       {open ? (
-        <div className="flex min-w-0 grow flex-col gap-1 overflow-y-auto py-3 pr-3 pl-3.5">
+        <div className="flex min-w-0 grow flex-col gap-4 overflow-y-auto py-3 pr-3 pl-3.5">
           {CATEGORIES.map((category) => (
-            <section key={category.id} className="flex flex-col gap-1">
+            <section key={category.id} className="flex flex-col gap-3">
               <h2
                 ref={(node) => {
                   if (node) headings.current.set(category.id, node);
                   else headings.current.delete(category.id);
                 }}
-                className="flex items-center gap-1.5 pt-1.5 text-[11px] font-bold tracking-wide text-ink-muted"
+                className="flex items-center gap-1.5 pt-1.5 text-[12px] font-bold tracking-wide text-ink-muted"
               >
                 <span className={`size-2.5 rounded ${category.fill}`} aria-hidden="true" />
                 {category.label.toUpperCase()}
@@ -148,8 +148,18 @@ interface PaletteBlockRowProps {
   readonly onPlace: (type: string) => void;
 }
 
+/**
+ * Zelos's notch at the palette's scale.
+ *
+ * The renderer draws it 36 wide and 8 deep, 12 in from the left of a block
+ * whose corners are 16; DESIGN.md gives a palette block 9px corners, so the
+ * same silhouette at a little over half the size.
+ */
+const NOTCH = "absolute left-[7px] h-1 w-5 [clip-path:polygon(0%_0%,33%_100%,67%_100%,100%_0%)]";
+
 /** Voice reaches every block; this keeps keyboard and pointer reaching them too. */
 function PaletteBlockRow({ block, fill, onPlace }: PaletteBlockRowProps) {
+  const { shape } = block;
   return (
     <button
       type="button"
@@ -157,24 +167,53 @@ function PaletteBlockRow({ block, fill, onPlace }: PaletteBlockRowProps) {
       // Spelled out because the parts are separate spans, which an accessible
       // name would run together into "move10steps".
       aria-label={`Add ${block.parts.map((part) => ("word" in part ? part.word : part.slot)).join(" ")}`}
-      className={`flex cursor-pointer items-center gap-1.5 rounded-[9px] px-2.5 py-1.5 text-left font-display text-sm font-semibold text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink ${fill}`}
+      // `self-start`, or the section stretches every block to the panel width
+      // and they all become the same bar. Half of what makes a block read as a
+      // puzzle piece is that a short one is visibly shorter.
+      className={`relative flex cursor-pointer flex-col items-start self-start rounded-[9px] text-left font-display text-[15px] font-semibold text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink ${fill}`}
     >
-      {block.parts.map((part) =>
-        "word" in part ? (
-          <span key={part.key}>{part.word}</span>
-        ) : (
-          <span
-            key={part.key}
-            className={
-              part.slot
-                ? "rounded-full bg-white px-2 py-px text-[13px] font-bold text-ink"
-                : "rounded-[5px] bg-black/25 px-4.5 py-0.5"
-            }
-          >
-            {part.slot}
+      {/* The hollows are painted in the panel's own colour rather than clipped
+          out of the button, so the focus ring stays a whole rounded rectangle
+          and the button still sizes to its words. */}
+      {shape.socketTop ? (
+        <span data-notch="top" aria-hidden="true" className={`${NOTCH} top-0 bg-surface`} />
+      ) : null}
+
+      <span className="flex flex-wrap items-center gap-1.5 px-2.5 py-1.5">
+        {block.parts.map((part) =>
+          "word" in part ? (
+            <span key={part.key}>{part.word}</span>
+          ) : (
+            <span
+              key={part.key}
+              className={
+                part.slot
+                  ? "rounded-full bg-white px-2 py-px text-[14px] font-bold text-ink"
+                  : "rounded-[5px] bg-black/25 px-4.5 py-0.5"
+              }
+            >
+              {part.slot}
+            </span>
+          ),
+        )}
+      </span>
+
+      {shape.mouth ? (
+        <>
+          <span data-mouth="true" aria-hidden="true" className="flex h-[18px] w-full">
+            <span className="w-3.5 shrink-0" />
+            <span className="relative grow rounded-l-[3px] bg-surface">
+              <span className={`${NOTCH} top-0 ${fill}`} />
+            </span>
           </span>
-        ),
-      )}
+          {/* The arm that closes the C under the mouth. */}
+          <span aria-hidden="true" className="h-3.5" />
+        </>
+      ) : null}
+
+      {shape.tabBottom ? (
+        <span data-notch="bottom" aria-hidden="true" className={`${NOTCH} top-full ${fill}`} />
+      ) : null}
     </button>
   );
 }

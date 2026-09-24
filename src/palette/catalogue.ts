@@ -25,10 +25,25 @@ export type BlockPart = { readonly word: string } | { readonly slot: string };
 /** A part with the identity React needs: two slots can hold the same value. */
 export type KeyedPart = BlockPart & { readonly key: string };
 
+/**
+ * The silhouette zelos gives a block, read off the same definition Blockly
+ * renders from, so the palette entry and the workspace block are the same
+ * object to look at.
+ */
+export interface BlockShape {
+  /** Something can connect above, so zelos indents the top edge. */
+  readonly socketTop: boolean;
+  /** Something can follow, so zelos hangs a tab under the bottom edge. */
+  readonly tabBottom: boolean;
+  /** The block holds a stack of others, so zelos draws it as a C. */
+  readonly mouth: boolean;
+}
+
 export interface PaletteBlock {
   readonly id: string;
   readonly category: CategoryId;
   readonly parts: readonly KeyedPart[];
+  readonly shape: BlockShape;
 }
 
 const FILLS: Record<CategoryId, string> = {
@@ -51,6 +66,11 @@ interface Argument {
 interface Definition {
   readonly message0: string;
   readonly args0?: readonly Argument[];
+  readonly message1?: string;
+  readonly args1?: readonly Argument[];
+  /** `null` is how a JSON definition says "connects, checking nothing". */
+  readonly previousStatement?: null;
+  readonly nextStatement?: null;
 }
 
 /**
@@ -62,6 +82,10 @@ const BORROWED: Record<string, Definition> = {
   controls_repeat_ext: {
     message0: "repeat %1 times",
     args0: [{ type: "input_value", name: "TIMES" }],
+    message1: "%1",
+    args1: [{ type: "input_statement", name: "DO" }],
+    previousStatement: null,
+    nextStatement: null,
   },
 };
 
@@ -104,6 +128,26 @@ function partsOf(type: string, inputs: Record<string, unknown> | undefined): Blo
   return parts;
 }
 
+const NO_SHAPE: BlockShape = { socketTop: false, tabBottom: false, mouth: false };
+
+/**
+ * The three connections a definition states, as the three things to draw.
+ *
+ * A cap block such as `forever` simply omits `nextStatement`, so absence is the
+ * test — a stated `null` still means the connection exists.
+ */
+function shapeOf(type: string): BlockShape {
+  const definition = DEFINITIONS.get(type);
+  if (!definition) return NO_SHAPE;
+
+  const inputs = [...(definition.args0 ?? []), ...(definition.args1 ?? [])];
+  return {
+    socketTop: definition.previousStatement !== undefined,
+    tabBottom: definition.nextStatement !== undefined,
+    mouth: inputs.some((argument) => argument.type === "input_statement"),
+  };
+}
+
 /** Parts are authored in order and never reorder, so position names them. */
 export const PALETTE_BLOCKS: readonly PaletteBlock[] = TOOLBOX_CATEGORIES.flatMap((category) =>
   category.contents.map((entry) => ({
@@ -113,6 +157,7 @@ export const PALETTE_BLOCKS: readonly PaletteBlock[] = TOOLBOX_CATEGORIES.flatMa
       ...part,
       key: `${entry.type}-${index}`,
     })),
+    shape: shapeOf(entry.type),
   })),
 );
 
