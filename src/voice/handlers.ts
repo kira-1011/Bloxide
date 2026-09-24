@@ -1,5 +1,5 @@
 import type * as Blockly from "blockly/core";
-import { BlockSvg, ConnectionType, serialization } from "blockly/core";
+import { BlockSvg, ConnectionType, Events, serialization } from "blockly/core";
 import type { VoxideActionConfig } from "@voxide/react";
 import { defineAction } from "@/voice/define-action";
 import { getActiveWorkspace } from "@/blockly/active-workspace";
@@ -32,6 +32,21 @@ function andItsNumber(said: string, block: Blockly.Block): string {
   return number === null ? said : `${said}. It is block ${number}.`;
 }
 
+/**
+ * One sentence, one undo step. Blockly undoes a whole event group at a time,
+ * and a single edit fires several events — healing a stack under a deleted
+ * block moves what was below it — so without a group the child would have to
+ * say "undo" twice to take one sentence back.
+ */
+function asOneEdit<T>(change: () => T): T {
+  Events.setGroup(true);
+  try {
+    return change();
+  } finally {
+    Events.setGroup(false);
+  }
+}
+
 function describeMiss(type?: string, number?: number): string {
   if (number !== undefined) return `There is no block ${number}.`;
   if (type) return `I cannot find a ${type} block.`;
@@ -52,20 +67,27 @@ export function addBlock({ type }: { type: string }): string {
   // a block with value inputs would arrive with holes in it, and filling a hole
   // takes a block dropped in by hand.
   const inputs = slotDefaults(resolved);
-  const block = serialization.blocks.append(
-    { type: resolved, ...(inputs ? { inputs } : {}) },
-    workspace,
-  );
+  const block = asOneEdit(() => {
+    // recordUndo defaults to false on the serialiser — it is written for
+    // loading a saved program — so without it a block added by voice could
+    // never be taken back.
+    const added = serialization.blocks.append(
+      { type: resolved, ...(inputs ? { inputs } : {}) },
+      workspace,
+      { recordUndo: true },
+    );
 
-  if (block instanceof BlockSvg) {
-    // Every new block starts at the origin, so without this they pile up on
-    // each other and a number cannot be read off the screen.
-    workspace.cleanUp();
-    // Blockly's own selection is the highlight AGENTS.md asks for, and it
-    // shows which block the next utterance will act on.
-    selectOnly(block);
-    revealBlock(workspace, block);
-  }
+    if (added instanceof BlockSvg) {
+      // Every new block starts at the origin, so without this they pile up on
+      // each other and a number cannot be read off the screen.
+      workspace.cleanUp();
+      // Blockly's own selection is the highlight AGENTS.md asks for, and it
+      // shows which block the next utterance will act on.
+      selectOnly(added);
+      revealBlock(workspace, added);
+    }
+    return added;
+  });
   rememberBlock(block);
   // Blockly queues its create event, so the workspace listener would not
   // renumber until after this returns and the next spoken number would miss.
@@ -247,7 +269,7 @@ export function deleteBlocks({
   const removed = spokenName(block.type);
   forgetBlock(block);
   // healStack: what was under it reconnects instead of being orphaned.
-  block.dispose(true);
+  asOneEdit(() => block.dispose(true));
   forgetMissingBlock(workspace);
   numberBlocks(workspace);
 
@@ -273,15 +295,55 @@ function deleteMany(workspace: Blockly.Workspace, numbers: string): string {
   const unique = [...new Set(found)];
   if (unique.length === 0) return "I cannot find those blocks.";
 
-  for (const block of unique) {
-    forgetBlock(block);
-    // A block inside one already deleted goes with it; disposing twice throws.
-    if (!block.disposed) block.dispose(true);
-  }
+  asOneEdit(() => {
+    for (const block of unique) {
+      forgetBlock(block);
+      // A block inside one already deleted goes with it; disposing twice throws.
+      if (!block.disposed) block.dispose(true);
+    }
+  });
   forgetMissingBlock(workspace);
   numberBlocks(workspace);
 
   return andWhatIsLeft(`Deleted ${countOf(unique.length)}`, workspace);
+}
+
+/**
+ * Steps Blockly's own history. It records every change as an event already, so
+ * a history of ours would be a second answer to the same question and would
+ * drift from the workspace the moment either side gained a feature.
+ *
+ * The count is the point of the sentence: undo puts blocks back and takes them
+ * away, and the agent's snapshot of the workspace predates that.
+ */
+function stepHistory(redo: boolean): string {
+  const workspace = getActiveWorkspace();
+
+  const history = redo ? workspace.getRedoStack() : workspace.getUndoStack();
+  if (history.length === 0) {
+    return redo ? "There is nothing to redo." : "There is nothing to undo.";
+  }
+
+  workspace.undo(redo);
+  // The block "it" referred to can have just been undone out of existence.
+  forgetMissingBlock(workspace);
+  numberBlocks(workspace);
+
+  return andWhatIsLeft(redo ? "Redone" : "Undone", workspace);
+}
+
+/**
+ * Takes back the last change. The one capability that has to exist beside
+ * `deleteBlocks`: a misheard sentence can empty the workspace, and a child who
+ * cannot drag has no other way to get a program back.
+ */
+export function undoEdit(): string {
+  return stepHistory(false);
+}
+
+/** Undo's own undo, so saying it by mistake costs nothing either. */
+export function redoEdit(): string {
+  return stepHistory(true);
 }
 
 /**
@@ -424,6 +486,18 @@ export const VOICE_ACTIONS = {
       },
     },
     handler: (args) => setParam(args),
+  }),
+
+  undo: defineAction({
+    description:
+      "Undo the last change to the blocks, putting back whatever it deleted or changed. " +
+      "Use this whenever something was removed or changed by mistake.",
+    handler: () => undoEdit(),
+  }),
+
+  redo: defineAction({
+    description: "Put back the change that undo just took away",
+    handler: () => redoEdit(),
   }),
 
   runProgram: defineAction({

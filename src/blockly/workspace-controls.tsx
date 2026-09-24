@@ -4,16 +4,16 @@ import type * as Blockly from "blockly/core";
 import { BlockSvg, common } from "blockly/core";
 import { getBlockNumber } from "@/blockly/block-view";
 import { zoomWorkspace, type ZoomDirection } from "@/blockly/workspace-zoom";
-import { deleteBlocks } from "@/voice/handlers";
+import { deleteBlocks, undoEdit } from "@/voice/handlers";
 
 interface WorkspaceControlsProps {
   readonly workspaceRef: RefObject<Blockly.WorkspaceSvg | null>;
 }
 
 /**
- * Zoom and delete, drawn as our own buttons rather than Blockly's: its controls
- * are small fixed images that ignore the theme, and a trash can is a drop
- * target, which only helps someone who can drag.
+ * Undo, zoom and delete, drawn as our own buttons rather than Blockly's: its
+ * controls are small fixed images that ignore the theme, and a trash can is a
+ * drop target, which only helps someone who can drag.
  */
 export function WorkspaceControls({ workspaceRef }: WorkspaceControlsProps) {
   const [said, setSaid] = useState("");
@@ -21,6 +21,13 @@ export function WorkspaceControls({ workspaceRef }: WorkspaceControlsProps) {
   const zoom = (direction: ZoomDirection) => {
     const workspace = workspaceRef.current;
     if (workspace) zoomWorkspace(workspace, direction);
+  };
+
+  // Undo sits above the column so the buttons already there keep their places:
+  // the row is anchored to the bottom, and a control that moves cannot be aimed
+  // at. Saying "undo" does the same thing; this is the second way, not the way.
+  const undo = () => {
+    if (workspaceRef.current) setSaid(undoEdit());
   };
 
   // Through the voice command's path, so the stack heals and the numbers move
@@ -39,6 +46,10 @@ export function WorkspaceControls({ workspaceRef }: WorkspaceControlsProps) {
 
   return (
     <div className="absolute right-5 bottom-5 flex flex-col gap-3">
+      <ControlButton label="Undo the last change" onClick={undo}>
+        <path d="M9 5 4 10l5 5" />
+        <path d="M4 10h10a5 5 0 0 1 0 10h-4" />
+      </ControlButton>
       <ControlButton label="Zoom in" onClick={() => zoom("in")}>
         <path d="M12 5v14M5 12h14" />
       </ControlButton>
