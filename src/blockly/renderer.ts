@@ -21,8 +21,6 @@ const EMPTY_MOUTH_HEIGHT = 48;
 const ROW_HEIGHT = 46;
 // Room kept between the widest inner block and the C-block's right edge.
 const MOUTH_RIGHT_PADDING = 12;
-// Above and below the inner blocks, so they read as held rather than stacked.
-const MOUTH_PADDING = 12;
 
 const { arc, point } = utils.svgPaths;
 
@@ -37,9 +35,6 @@ class BloxideConstants extends zelos.ConstantProvider {
     // a value ("repeat 10 times", "move 10 steps"), so blocks and C-block
     // headers would come in two heights.
     this.DUMMY_INPUT_MIN_HEIGHT = ROW_HEIGHT;
-    // Added to the mouth's height under the inner blocks; the drawer spends half
-    // of it above them.
-    this.STATEMENT_BOTTOM_SPACER = MOUTH_PADDING * 2;
   }
 
   /** The mouth's own corners stay tight, as the design draws them, however round the outside is. */
@@ -81,17 +76,6 @@ class BloxideRenderInfo extends zelos.RenderInfo {
   }
 }
 
-class BloxideDrawer extends zelos.Drawer {
-  // Down only: the inset from the arm comes from the notch offset, above.
-  protected override positionStatementInputConnection_(row: blockRendering.Row): void {
-    super.positionStatementInputConnection_(row);
-    const connection = row.getLastInput()?.connectionModel;
-    if (!connection) return;
-    const offset = connection.getOffsetInBlock();
-    connection.setOffsetInBlock(offset.x, offset.y + MOUTH_PADDING);
-  }
-}
-
 class BloxideRenderer extends zelos.Renderer {
   protected override makeConstants_(): zelos.ConstantProvider {
     return new BloxideConstants();
@@ -99,10 +83,6 @@ class BloxideRenderer extends zelos.Renderer {
 
   protected override makeRenderInfo_(block: BlockSvg): zelos.RenderInfo {
     return new BloxideRenderInfo(this, block);
-  }
-
-  protected override makeDrawer_(block: BlockSvg, info: zelos.RenderInfo): zelos.Drawer {
-    return new BloxideDrawer(block, info);
   }
 }
 
