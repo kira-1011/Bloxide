@@ -70,7 +70,7 @@ fill their empty hexagon, and position reference ("the second repeat").
 
 ## Running it locally
 
-You need pnpm and Node `^20.19` or `>=22.12`.
+You need pnpm and Node `>=22.12`.
 
 ```bash
 git clone https://github.com/kira-1011/Bloxide.git
